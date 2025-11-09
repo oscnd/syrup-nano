@@ -38,6 +38,11 @@ func ConstructWordCodeFile(pogreb *pogreb.Pogreb, no *uint64, filePath string) {
 
 	// * read line by line
 	scanner := bufio.NewScanner(file)
+
+	// * set buffer
+	buf := make([]byte, 0, 1024*1024)
+	scanner.Buffer(buf, 1024*1024)
+
 	for lineNo := 1; scanner.Scan(); lineNo++ {
 		line := scanner.Bytes()
 
@@ -64,7 +69,7 @@ func ConstructWordCodeFile(pogreb *pogreb.Pogreb, no *uint64, filePath string) {
 			}
 
 			// * optional: log processing
-			fmt.Printf("processed code: %s:%d, extracted %d words\n", code.Path, contentLineNo, len(values))
+			fmt.Printf("processed code: %s:%d, %s:%d, extracted %d words\n", filepath.Base(filePath), lineNo, code.Path, contentLineNo, len(values))
 		}
 	}
 
