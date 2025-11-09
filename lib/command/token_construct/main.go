@@ -25,4 +25,5 @@ func main() {
 func invoke(config *config.Config, pogreb *pogreb.Pogreb) {
 	no := uint64(0)
 	ConstructWordSpecial(pogreb, &no)
+	ConstructWordCode(pogreb, &no)
 }

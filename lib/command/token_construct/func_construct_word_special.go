@@ -16,8 +16,8 @@ var wordModifier = map[string]uint64{
 	"#nextUpper#": 0,
 }
 
-var wordSpecialMapper map[string]struct{} = make(map[string]struct{})
-var wordSpecialLookup map[string][]string = make(map[string][]string)
+var wordSpecialMapper = make(map[string]struct{})
+var wordSpecialLookup = make(map[string][]string)
 
 func ConstructWordSpecial(pogreb *pogreb.Pogreb, no *uint64) {
 	// * glob jsonl files
