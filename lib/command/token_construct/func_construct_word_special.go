@@ -11,15 +11,30 @@ import (
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
+var wordModifier = map[string]uint64{
+	"#nextCamel#": 0,
+	"#nextUpper#": 0,
+}
+
+var wordSpecialMapper map[string]struct{} = make(map[string]struct{})
+var wordSpecialLookup map[string][]string = make(map[string][]string)
+
 func ConstructWordSpecial(pogreb *pogreb.Pogreb, no *uint64) {
 	// * glob jsonl files
 	pattern := "dataset/tokenizer/word_*.jsonl"
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
-		fmt.Printf("Error globbing files: %v\n", err)
+		fmt.Printf("glob error: %v\n", err)
 		return
 	}
 
+	// * process word modifier
+	for key := range wordModifier {
+		ProcessWord(pogreb, no, key)
+		wordModifier[key] = *no
+	}
+
+	// * process word special
 	for _, filePath := range matches {
 		ConstructWordSpecialFile(pogreb, no, filePath)
 	}
@@ -29,7 +44,7 @@ func ConstructWordSpecialFile(pogreb *pogreb.Pogreb, no *uint64, filePath string
 	// * open the file
 	file, err := os.Open(filePath)
 	if err != nil {
-		fmt.Printf("Error opening file %s: %v\n", filePath, err)
+		fmt.Printf("error opening file %s: %v\n", filePath, err)
 		return
 	}
 	defer file.Close()
@@ -45,11 +60,20 @@ func ConstructWordSpecialFile(pogreb *pogreb.Pogreb, no *uint64, filePath string
 			continue
 		}
 
+		// * set word special mapper
+		wordSpecialMapper[word.Word] = struct{}{}
+
+		// * set word special lookup
+		if len(word.Word) > 1 {
+			firstChar := string(word.Word[0])
+			wordSpecialLookup[firstChar] = append(wordSpecialLookup[firstChar], word.Word)
+		}
+
 		// * process the word
 		ProcessWord(pogreb, no, word.Word)
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error reading file %s: %v\n", filePath, err)
+		fmt.Printf("error reading file %s: %v\n", filePath, err)
 	}
 }
