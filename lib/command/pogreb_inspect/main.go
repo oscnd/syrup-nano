@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"slices"
 
 	pogreb2 "github.com/akrylysov/pogreb"
 	"github.com/bsthun/gut"
@@ -24,8 +25,9 @@ func main() { // * main fx application
 	).Run()
 }
 
-func invoke(pogreb *pogreb.Pogreb) {
+func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb) {
 	it := pogreb.WordMapper.Items()
+	keys := make([]string, 0)
 	for {
 		key, val, err := it.Next()
 		if errors.Is(err, pogreb2.ErrIterationDone) {
@@ -35,5 +37,14 @@ func invoke(pogreb *pogreb.Pogreb) {
 			log.Fatal(err)
 		}
 		log.Printf("%s %s", gut.Base62(util.BytesToUint64(val)), string(key))
+		keys = append(keys, string(key))
 	}
+
+	slices.Sort(keys)
+
+	for _, key := range keys {
+		log.Println(key)
+	}
+
+	_ = shutdowner.Shutdown()
 }
