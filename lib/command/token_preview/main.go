@@ -70,6 +70,5 @@ func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb, tokenizer tokenizer
 	// output formatted token
 	OutputToken(pairs)
 
-	//_ = shutdowner.Shutdown()
-	os.Exit(0)
+	_ = shutdowner.Shutdown()
 }
