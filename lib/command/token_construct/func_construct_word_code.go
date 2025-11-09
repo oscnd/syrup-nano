@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
@@ -58,6 +59,20 @@ func ConstructWordCodeFile(pogreb *pogreb.Pogreb, no *uint64, filePath string) {
 			// * process line
 			values := ProcessLine(pogreb, contentLine)
 
+			// * preflight test
+			for _, value := range values {
+				word, ok := value.(string)
+				if !ok {
+					continue
+				}
+
+				if matched, _ := regexp.MatchString("^[a-z]+$", word); !matched {
+					fmt.Printf("invalid word '%s' extracted from %s:%d, %s:%d\n", word, filepath.Base(filePath), lineNo, code.Path, contentLineNo)
+					goto next
+				}
+			}
+
+			// * store words
 			for _, value := range values {
 				switch value.(type) {
 				case uint64:
@@ -72,6 +87,7 @@ func ConstructWordCodeFile(pogreb *pogreb.Pogreb, no *uint64, filePath string) {
 			if false {
 				fmt.Printf("processed code: %s:%d, %s:%d, extracted %d words\n", filepath.Base(filePath), lineNo, code.Path, contentLineNo, len(values))
 			}
+		next:
 		}
 	}
 

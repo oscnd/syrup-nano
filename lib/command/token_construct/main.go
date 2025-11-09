@@ -20,7 +20,6 @@ func main() {
 			invoke,
 		),
 	).Run()
-
 }
 
 func invoke(shutdowner fx.Shutdowner, config *config.Config, pogreb *pogreb.Pogreb) {

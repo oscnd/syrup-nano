@@ -3,21 +3,21 @@ package enum
 type WordModifierType string
 
 const (
-	WordModifierNextCamel  WordModifierType = "#nextCamel#"
-	WordModifierNextUpper  WordModifierType = "#nextUpper#"
-	WordModifierNextPlural WordModifierType = "#nextPlural#"
-	WordModifierNextEd     WordModifierType = "#nextEd#"
-	WordModifierNextEr     WordModifierType = "#nextEr#"
-	WordModifierNextIng    WordModifierType = "#nextIng#"
-	WordModifierNextLy     WordModifierType = "#nextLy#"
+	WordModifierNextCamel WordModifierType = "#nextCamel#"
+	WordModifierNextUpper WordModifierType = "#nextUpper#"
 )
 
 var WordModifier = map[WordModifierType]uint64{
-	WordModifierNextCamel:  0,
-	WordModifierNextUpper:  0,
-	WordModifierNextPlural: 0,
-	WordModifierNextEd:     0,
-	WordModifierNextEr:     0,
-	WordModifierNextIng:    0,
-	WordModifierNextLy:     0,
+	WordModifierNextCamel: 0,
+	WordModifierNextUpper: 0,
+}
+
+var SuffixToModifierType = map[string]WordModifierType{
+	"s":   "#suffixS#",
+	"es":  "#suffixEs#",
+	"ies": "#suffixIes#",
+	"ed":  "#suffixEd#",
+	"er":  "#suffixEr#",
+	"ing": "#suffixIng#",
+	"ly":  "#suffixLy#",
 }

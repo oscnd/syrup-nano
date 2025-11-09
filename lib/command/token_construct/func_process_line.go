@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"unicode"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
@@ -27,9 +28,9 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
 			// found a matching special token
 			value, err := pogreb.WordMapper.Get([]byte(specialWord))
 			if err != nil || value == nil {
-				fmt.Printf("error retrieving special token %s: %v", specialWord, err)
+				fmt.Printf("error retrieving special token %s: %v\n", specialWord, err)
 			}
-			tokenNo, _ := util.MapperPayloadExtract(value)
+			_, tokenNo, _ := util.MapperPayloadExtract(value)
 			values = append(values, tokenNo)
 			i += len(specialWord)
 			goto nextIteration
@@ -66,7 +67,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
 
 			if consecutiveUpper {
 				values = append(values, enum.WordModifier[enum.WordModifierNextUpper])
-				values = append(values, line[i:j])
+				values = append(values, strings.ToLower(line[i:j]))
 				i = j
 				goto nextIteration
 			} else {

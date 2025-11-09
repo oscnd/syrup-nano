@@ -24,17 +24,23 @@ func Uint64ToBytes(value uint64) []byte {
 	}
 }
 
-func MapperPayloadExtract(value []byte) (uint64, uint64) {
-	tokenNo := BytesToUint64(value[0:8])
-	count := BytesToUint64(value[8:16])
+func MapperPayloadExtract(value []byte) (bool, uint64, uint64) {
+	flag := value[0:8]
+	tokenNo := BytesToUint64(value[8:16])
+	count := BytesToUint64(value[16:24])
 
-	return tokenNo, count
+	special := flag[0]&0b00000001 == 1
+
+	return special, tokenNo, count
 }
 
-func MapperPayloadBuild(tokenNo uint64, count uint64) []byte {
-	payload := make([]byte, 16)
-	copy(payload[0:8], Uint64ToBytes(tokenNo))
-	copy(payload[8:16], Uint64ToBytes(count))
+func MapperPayloadBuild(special bool, tokenNo uint64, count uint64) []byte {
+	payload := make([]byte, 24)
+	if special {
+		copy(payload[0:8], []byte{0b00000001, 0, 0, 0, 0, 0, 0, 0})
+	}
+	copy(payload[8:16], Uint64ToBytes(tokenNo))
+	copy(payload[16:24], Uint64ToBytes(count))
 
 	return payload
 }

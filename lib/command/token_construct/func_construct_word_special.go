@@ -29,6 +29,12 @@ func ConstructWordSpecial(pogreb *pogreb.Pogreb, no *uint64) {
 		enum.WordModifier[key] = *no
 	}
 
+	// * process word suffix
+	for key := range enum.WordSuffix {
+		ProcessWord(pogreb, no, string(key))
+		enum.WordSuffix[key].TokenNo = *no
+	}
+
 	// * process word special
 	for _, filePath := range matches {
 		ConstructWordSpecialFile(pogreb, no, filePath)
