@@ -15,40 +15,31 @@ class Nano:
         if not os.path.exists(library_path):
             raise FileNotFoundError(f"nano.so not found at {library_path}")
 
-        # Load the shared library
+        # load shared library
         self.lib = ctypes.PyDLL(library_path)
 
-        # Define function signatures
+        # define function signatures
         self.lib.load.argtypes = []
         self.lib.load.restype = None
 
         self.lib.encode.argtypes = [ctypes.c_char_p]
         self.lib.encode.restype = ctypes.c_char_p
 
-        # Load the library
+        # library initialization
         self.lib.load()
 
     def encode(self, text: str) -> list:
-        """
-        Encode text using the nano.so encode function
-
-        Args:
-            text: Input text to encode
-
-        Returns:
-            List of word pairs/tokens from the tokenizer
-        """
-        # Convert Python string to C string
+        # convert python string to c string
         c_text = ctypes.create_string_buffer(text.encode('utf-8'))
 
-        # Call the encode function
+        # call encode function
         result = self.lib.encode(c_text)
 
-        # Convert C string back to Python string
+        # convert c string result to python string
         result_str = ctypes.string_at(result).decode('utf-8')
 
         try:
-            # Parse JSON result into Python list
+            # parse json result
             return json.loads(result_str)
         except json.JSONDecodeError as e:
             raise ValueError(f"failed to decode json: {e}")

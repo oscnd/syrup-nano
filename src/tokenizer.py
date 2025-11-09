@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import ast
 
 class WordPair:
     def __init__(self, word, token):
