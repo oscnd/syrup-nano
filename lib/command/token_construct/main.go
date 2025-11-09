@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"go.scnd.dev/open/syrup/nano/lib/common/config"
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.uber.org/fx"
@@ -26,4 +28,5 @@ func invoke(config *config.Config, pogreb *pogreb.Pogreb) {
 	no := uint64(0)
 	ConstructWordSpecial(pogreb, &no)
 	ConstructWordCode(pogreb, &no)
+	os.Exit(0)
 }
