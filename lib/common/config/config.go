@@ -8,15 +8,22 @@ import (
 )
 
 type Config struct {
+	Log               *uint8  `yaml:"log" validate:"min=0,max=5"`
 	PogrebWordMapper  *string `yaml:"pogrebWordMapper"`
 	PogrebTokenMapper *string `yaml:"pogrebTokenMapper"`
+	PogrebWritable    *bool   `yaml:"pogrebWritable" validate:"required"`
 }
 
 func Init() *Config {
 	// * parse arguments
 	path := os.Getenv("BACKEND_CONFIG_PATH")
 	if path == "" {
-		path = "config.yml"
+		if _, err := os.Stat("config.yml"); err == nil {
+			path = "config.yml"
+		}
+		if _, err := os.Stat("../.local/config.yml"); err == nil {
+			path = "../.local/config.yml"
+		}
 	}
 
 	// * declare struct

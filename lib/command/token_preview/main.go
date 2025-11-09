@@ -36,14 +36,14 @@ func main() {
 			tokenizer.Serve,
 		),
 		fx.Invoke(
-			func(config *config.Config, pogreb *pogreb.Pogreb, tokenizer tokenizer.Server) {
-				invoke(pogreb, tokenizer, *filePath)
+			func(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb, tokenizer tokenizer.Server) {
+				invoke(shutdowner, pogreb, tokenizer, *filePath)
 			},
 		),
 	).Run()
 }
 
-func invoke(pogreb *pogreb.Pogreb, tokenizer tokenizer.Server, filePath string) {
+func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb, tokenizer tokenizer.Server, filePath string) {
 	// open and read file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -69,5 +69,7 @@ func invoke(pogreb *pogreb.Pogreb, tokenizer tokenizer.Server, filePath string) 
 
 	// output formatted token
 	OutputToken(pairs)
+
+	//_ = shutdowner.Shutdown()
 	os.Exit(0)
 }

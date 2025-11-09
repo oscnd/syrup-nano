@@ -69,7 +69,9 @@ func ConstructWordCodeFile(pogreb *pogreb.Pogreb, no *uint64, filePath string) {
 			}
 
 			// * optional: log processing
-			fmt.Printf("processed code: %s:%d, %s:%d, extracted %d words\n", filepath.Base(filePath), lineNo, code.Path, contentLineNo, len(values))
+			if false {
+				fmt.Printf("processed code: %s:%d, %s:%d, extracted %d words\n", filepath.Base(filePath), lineNo, code.Path, contentLineNo, len(values))
+			}
 		}
 	}
 

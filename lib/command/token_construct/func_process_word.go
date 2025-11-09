@@ -14,8 +14,10 @@ func ProcessWord(pogreb *pogreb.Pogreb, no *uint64, word string) {
 
 	// * generalize word
 	if v, modifier := ProcessWordGeneralize(pogreb, word); v != nil {
+		if false {
+			fmt.Printf("found modifier for word %s: %s\n", word, modifier)
+		}
 		value = v
-		fmt.Printf("found modifier for word %s: %s\n", word, modifier)
 		goto update
 	}
 
