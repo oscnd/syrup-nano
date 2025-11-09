@@ -54,3 +54,9 @@ func encode(text *C.char) *C.char {
 	}
 	return C.CString(string(bytes))
 }
+
+//export decode
+func decode(token C.ulonglong) *C.char {
+	result := app.Tokenizer.Decode(uint64(token))
+	return C.CString(result)
+}

@@ -25,6 +25,9 @@ class Nano:
         self.lib.encode.argtypes = [ctypes.c_char_p]
         self.lib.encode.restype = ctypes.c_char_p
 
+        self.lib.decode.argtypes = [ctypes.c_ulonglong]
+        self.lib.decode.restype = ctypes.c_char_p
+
         # library initialization
         self.lib.load()
 
@@ -43,3 +46,15 @@ class Nano:
             return json.loads(result_str)
         except json.JSONDecodeError as e:
             raise ValueError(f"failed to decode json: {e}")
+
+    def decode(self, token: int) -> str:
+        # convert python int to c_ulonglong
+        c_token = ctypes.c_ulonglong(token)
+
+        # call decode function
+        result = self.lib.decode(c_token)
+
+        # convert c string result to python string
+        result_str = ctypes.string_at(result).decode('utf-8')
+
+        return result_str

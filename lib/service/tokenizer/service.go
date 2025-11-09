@@ -11,6 +11,7 @@ type Server interface {
 	LoadWordSpecial()
 	ProcessLine(line string) []*tuple.WordPair
 	ProcessWord(word string) *tuple.WordPair
+	Decode(token uint64) string
 }
 
 type Service struct {
