@@ -8,18 +8,21 @@ import (
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
-func OutputToken(pairs []tuple.WordPair) {
+func OutputToken(pairs []*tuple.WordPair) {
 	tokenPerLine := 5
 
 	for i, pair := range pairs {
 		word := pair.Word
 
 		// handle special characters
-		if word == "# " {
+		if word == " " {
 			word = "#spc#"
 		}
-		if word == "#\t" {
+		if word == "\t" {
 			word = "#tab#"
+		}
+		if word == "\n" {
+			word = "#nl#"
 		}
 
 		// truncate word

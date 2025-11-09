@@ -1,4 +1,4 @@
-package main
+package tokenizer
 
 import (
 	"bufio"
@@ -7,15 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 	"go.scnd.dev/open/syrup/nano/lib/util"
 )
 
-var wordSpecialLookup = make(map[string][]string)
-var wordSpecialToken = make(map[string]uint64)
-
-func LoadWordSpecial(pogreb *pogreb.Pogreb) {
+func (r *Service) LoadWordSpecial() {
 	// glob jsonl files for special words
 	pattern := "dataset/tokenizer/word_*.jsonl"
 	matches, err := filepath.Glob(pattern)
@@ -26,11 +22,11 @@ func LoadWordSpecial(pogreb *pogreb.Pogreb) {
 
 	// process each file
 	for _, filePath := range matches {
-		loadWordSpecialFromFile(pogreb, filePath)
+		r.LoadWordSpecialFromFile(filePath)
 	}
 }
 
-func loadWordSpecialFromFile(pogreb *pogreb.Pogreb, filePath string) {
+func (r *Service) LoadWordSpecialFromFile(filePath string) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Printf("error opening file %s: %v\n", filePath, err)
@@ -51,16 +47,16 @@ func loadWordSpecialFromFile(pogreb *pogreb.Pogreb, filePath string) {
 		// set word special lookup
 		if len(word.Word) > 0 {
 			firstChar := string(word.Word[0])
-			wordSpecialLookup[firstChar] = append(wordSpecialLookup[firstChar], word.Word)
+			r.WordSpecialLookup[firstChar] = append(r.WordSpecialLookup[firstChar], word.Word)
 
 			// load and fetch pogreb for token and store in map
-			value, err := pogreb.WordMapper.Get([]byte(word.Word))
+			value, err := r.pogreb.WordMapper.Get([]byte(word.Word))
 			if err != nil || value == nil {
 				fmt.Printf("special word %s not found in pogreb\n", word.Word)
-				wordSpecialToken[word.Word] = 0
+				r.WordSpecialToken[word.Word] = 0
 			} else {
 				tokenNo, _ := util.MapperPayloadExtract(value)
-				wordSpecialToken[word.Word] = tokenNo
+				r.WordSpecialToken[word.Word] = tokenNo
 			}
 		}
 	}

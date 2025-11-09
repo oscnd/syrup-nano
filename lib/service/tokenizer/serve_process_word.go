@@ -1,17 +1,16 @@
-package main
+package tokenizer
 
 import (
-	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 	"go.scnd.dev/open/syrup/nano/lib/util"
 )
 
-func ProcessWord(pogreb *pogreb.Pogreb, word string) tuple.WordPair {
+func (r *Service) ProcessWord(word string) *tuple.WordPair {
 	// try to get word from pogreb
-	value, err := pogreb.WordMapper.Get([]byte(word))
+	value, err := r.pogreb.WordMapper.Get([]byte(word))
 	if err != nil || value == nil {
 		// word not found, return WordPair with Token = 0
-		return tuple.WordPair{
+		return &tuple.WordPair{
 			Word:  word,
 			Token: 0,
 		}
@@ -19,7 +18,7 @@ func ProcessWord(pogreb *pogreb.Pogreb, word string) tuple.WordPair {
 
 	// extract token number
 	tokenNo, _ := util.MapperPayloadExtract(value)
-	return tuple.WordPair{
+	return &tuple.WordPair{
 		Word:  word,
 		Token: tokenNo,
 	}

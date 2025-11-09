@@ -1,38 +1,37 @@
-package main
+package tokenizer
 
 import (
 	"fmt"
 	"unicode"
 
-	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 	"go.scnd.dev/open/syrup/nano/lib/util"
 )
 
-func ProcessLine(pogreb *pogreb.Pogreb, line string) []tuple.WordPair {
-	var pairs []tuple.WordPair
+func (r *Service) ProcessLine(line string) []*tuple.WordPair {
+	var pairs []*tuple.WordPair
 	var current []rune
 	i := 0
 
 	for i < len(line) {
-		// check for special word using WordSpecialCheck utility
-		specialWord := util.WordSpecialCheck(line, i, wordSpecialLookup)
+		// check for special word
+		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
 		if specialWord != "" {
 			// case of accumulated characters before, add them as a word
 			if len(current) > 0 {
-				wordPair := ProcessWord(pogreb, string(current))
+				wordPair := r.ProcessWord(string(current))
 				pairs = append(pairs, wordPair)
 				current = current[:0] // clear accumulated characters
 			}
 
 			// add special word
-			tokenNo, exists := wordSpecialToken[specialWord]
+			tokenNo, exists := r.WordSpecialToken[specialWord]
 			if !exists {
 				fmt.Printf("special word token not found for word: %s\n", specialWord)
 			}
-			pairs = append(pairs, tuple.WordPair{
-				Word:  "#" + specialWord,
+			pairs = append(pairs, &tuple.WordPair{
+				Word:  specialWord,
 				Token: tokenNo,
 			})
 			i += len(specialWord)
@@ -43,7 +42,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []tuple.WordPair {
 		if unicode.IsUpper(rune(line[i])) {
 			// case of accumulated characters before this modifier, add them as a word
 			if len(current) > 0 {
-				wordPair := ProcessWord(pogreb, string(current))
+				wordPair := r.ProcessWord(string(current))
 				pairs = append(pairs, wordPair)
 				current = current[:0] // clear accumulated characters
 			}
@@ -53,7 +52,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []tuple.WordPair {
 			var j int
 			for j = i; j < len(line); j++ {
 				// break on special word check
-				if util.WordSpecialCheck(line, j, wordSpecialLookup) != "" {
+				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != "" {
 					consecutiveUpper = true
 					break
 				}
@@ -70,17 +69,17 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []tuple.WordPair {
 			}
 
 			if consecutiveUpper {
-				pairs = append(pairs, tuple.WordPair{
+				pairs = append(pairs, &tuple.WordPair{
 					Word:  string(enum.WordModifierNextUpper),
 					Token: enum.WordModifier[enum.WordModifierNextUpper],
 				})
 
-				wordPair := ProcessWord(pogreb, line[i:j])
+				wordPair := r.ProcessWord(line[i:j])
 				pairs = append(pairs, wordPair)
 				i = j
 				goto nextIteration
 			} else {
-				pairs = append(pairs, tuple.WordPair{
+				pairs = append(pairs, &tuple.WordPair{
 					Word:  string(enum.WordModifierNextCamel),
 					Token: enum.WordModifier[enum.WordModifierNextCamel],
 				})
@@ -96,7 +95,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []tuple.WordPair {
 
 	// add any remaining characters as a word
 	if len(current) > 0 {
-		wordPair := ProcessWord(pogreb, string(current))
+		wordPair := r.ProcessWord(string(current))
 		pairs = append(pairs, wordPair)
 	}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/bsthun/gut"
 	"go.scnd.dev/open/syrup/nano/lib/common/config"
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
+	"go.scnd.dev/open/syrup/nano/lib/service/tokenizer"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 	"go.uber.org/fx"
 )
@@ -32,22 +33,17 @@ func main() {
 		fx.Provide(
 			config.Init,
 			pogreb.Init,
+			tokenizer.Serve,
 		),
 		fx.Invoke(
-			func(config *config.Config, pogreb *pogreb.Pogreb) {
-				invoke(pogreb, *filePath)
+			func(config *config.Config, pogreb *pogreb.Pogreb, tokenizer tokenizer.Server) {
+				invoke(pogreb, tokenizer, *filePath)
 			},
 		),
 	).Run()
 }
 
-func invoke(pogreb *pogreb.Pogreb, filePath string) {
-	// load special words with pogreb to pre-cache tokens
-	LoadWordSpecial(pogreb)
-
-	// load word modifiers from pogreb
-	LoadWordModifier(pogreb)
-
+func invoke(pogreb *pogreb.Pogreb, tokenizer tokenizer.Server, filePath string) {
 	// open and read file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -57,12 +53,14 @@ func invoke(pogreb *pogreb.Pogreb, filePath string) {
 
 	// process file line by line
 	scanner := bufio.NewScanner(file)
-	var pairs []tuple.WordPair
+	var pairs []*tuple.WordPair
 
+	endLinePair := tokenizer.ProcessWord("\n")
 	for scanner.Scan() {
 		line := scanner.Text()
-		linePairs := ProcessLine(pogreb, line)
+		linePairs := tokenizer.ProcessLine(line)
 		pairs = append(pairs, linePairs...)
+		pairs = append(pairs, endLinePair)
 	}
 
 	if err := scanner.Err(); err != nil {
