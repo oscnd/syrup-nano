@@ -7,6 +7,10 @@ import (
 )
 
 func main() {
+	// * clear pogreb database
+	ClearPogreb(config.Init())
+
+	// * main fx application
 	fx.New(
 		fx.Provide(
 			config.Init,
@@ -19,5 +23,6 @@ func main() {
 }
 
 func invoke(config *config.Config, pogreb *pogreb.Pogreb) {
-
+	no := uint64(0)
+	ConstructWordSpecial(pogreb, &no)
 }
