@@ -31,3 +31,6 @@ class WordEncodeResult:
 
     def to_list(self):
         return self.word_pairs
+
+    def to_token_list(self):
+        return [pair.token for pair in self.word_pairs]
