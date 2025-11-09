@@ -7,8 +7,19 @@ import (
 )
 
 func ProcessWord(pogreb *pogreb.Pogreb, no *uint64, word string) {
+	// * construct variable
+	var value []byte
+	var err error
+
+	// * generalize word
+	if v, modifier := ProcessWordGeneralize(pogreb, word); v != nil {
+		value = v
+		fmt.Printf("found modifier for word %s: %s\n", word, modifier)
+		goto update
+	}
+
 	// * get word from pogreb
-	value, err := pogreb.WordMapper.Get([]byte(word))
+	value, err = pogreb.WordMapper.Get([]byte(word))
 	if err != nil || value == nil {
 		// * case word does not exist
 		*no++
@@ -24,6 +35,7 @@ func ProcessWord(pogreb *pogreb.Pogreb, no *uint64, word string) {
 		return
 	}
 
+update:
 	// case word exists
 	tokenNo, count := MapperPayloadExtract(value)
 	count++

@@ -11,9 +11,26 @@ import (
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
-var wordModifier = map[string]uint64{
-	"#nextCamel#": 0,
-	"#nextUpper#": 0,
+type WordModifierType string
+
+const (
+	WordModifierNextCamel  WordModifierType = "#nextCamel#"
+	WordModifierNextUpper  WordModifierType = "#nextUpper#"
+	WordModifierNextPlural WordModifierType = "#nextPlural#"
+	WordModifierNextEd     WordModifierType = "#nextEd#"
+	WordModifierNextEr     WordModifierType = "#nextEr#"
+	WordModifierNextIng    WordModifierType = "#nextIng#"
+	WordModifierNextLy     WordModifierType = "#nextLy#"
+)
+
+var wordModifier = map[WordModifierType]uint64{
+	WordModifierNextCamel:  0,
+	WordModifierNextUpper:  0,
+	WordModifierNextPlural: 0,
+	WordModifierNextEd:     0,
+	WordModifierNextEr:     0,
+	WordModifierNextIng:    0,
+	WordModifierNextLy:     0,
 }
 
 var wordSpecialMapper = make(map[string]struct{})
@@ -30,7 +47,7 @@ func ConstructWordSpecial(pogreb *pogreb.Pogreb, no *uint64) {
 
 	// * process word modifier
 	for key := range wordModifier {
-		ProcessWord(pogreb, no, key)
+		ProcessWord(pogreb, no, string(key))
 		wordModifier[key] = *no
 	}
 
@@ -64,10 +81,8 @@ func ConstructWordSpecialFile(pogreb *pogreb.Pogreb, no *uint64, filePath string
 		wordSpecialMapper[word.Word] = struct{}{}
 
 		// * set word special lookup
-		if len(word.Word) > 1 {
-			firstChar := string(word.Word[0])
-			wordSpecialLookup[firstChar] = append(wordSpecialLookup[firstChar], word.Word)
-		}
+		firstChar := string(word.Word[0])
+		wordSpecialLookup[firstChar] = append(wordSpecialLookup[firstChar], word.Word)
 
 		// * process the word
 		ProcessWord(pogreb, no, word.Word)

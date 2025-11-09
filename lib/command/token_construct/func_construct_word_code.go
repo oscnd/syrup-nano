@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
@@ -47,19 +48,23 @@ func ConstructWordCodeFile(pogreb *pogreb.Pogreb, no *uint64, filePath string) {
 		}
 
 		// * process the content using ProcessLine
-		values := ProcessLine(pogreb, code.Content)
+		contentLines := strings.Split(code.Content, "\n")
+		for contentLineNo, contentLine := range contentLines {
+			// * process line
+			values := ProcessLine(pogreb, contentLine)
 
-		// * optional: log processing
-		fmt.Printf("processed code: %s:%d, extracted %d words\n", filePath, lineNo, len(values))
-
-		for _, value := range values {
-			switch value.(type) {
-			case uint64:
-				continue
-			case string:
-				word := value.(string)
-				ProcessWord(pogreb, no, word)
+			for _, value := range values {
+				switch value.(type) {
+				case uint64:
+					continue
+				case string:
+					word := value.(string)
+					ProcessWord(pogreb, no, word)
+				}
 			}
+
+			// * optional: log processing
+			fmt.Printf("processed code: %s:%d, extracted %d words\n", code.Path, contentLineNo, len(values))
 		}
 	}
 
