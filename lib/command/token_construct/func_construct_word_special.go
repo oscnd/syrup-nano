@@ -12,7 +12,6 @@ import (
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
-var wordSpecialMapper = make(map[string]struct{})
 var wordSpecialLookup = make(map[string][]string)
 
 func ConstructWordSpecial(pogreb *pogreb.Pogreb, no *uint64) {
@@ -55,9 +54,6 @@ func ConstructWordSpecialFile(pogreb *pogreb.Pogreb, no *uint64, filePath string
 			fmt.Printf("error unmarshaling line in file %s: %v\n", filePath, err)
 			continue
 		}
-
-		// * set word special mapper
-		wordSpecialMapper[word.Word] = struct{}{}
 
 		// * set word special lookup
 		firstChar := string(word.Word[0])

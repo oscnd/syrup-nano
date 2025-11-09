@@ -5,6 +5,7 @@ go 1.25.4
 require (
 	github.com/akrylysov/pogreb v0.10.2
 	github.com/bsthun/gut v1.2.8
+	github.com/davecgh/go-spew v1.1.1
 	go.uber.org/fx v1.24.0
 	gopkg.in/yaml.v3 v3.0.1
 )

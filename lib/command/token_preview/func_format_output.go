@@ -2,27 +2,50 @@ package main
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/bsthun/gut"
+	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
-func OutputTokens(tokens []string) {
+func OutputToken(pairs []tuple.WordPair) {
 	tokenPerLine := 5
 
-	for i, token := range tokens {
-		fmt.Print(token)
+	for i, pair := range pairs {
+		word := pair.Word
 
-		// add space between tokens
-		if (i+1)%tokenPerLine != 0 && i != len(tokens)-1 {
-			fmt.Print(" ")
+		// handle special characters
+		if word == "# " {
+			word = "#spc#"
+		}
+		if word == "#\t" {
+			word = "#tab#"
 		}
 
-		// add newline after every 10 tokens
+		// truncate word
+		if len(word) > 10 {
+			word = word[:9] + "…" // U+2026
+		} else if len(word) < 10 {
+			word = word + strings.Repeat(" ", 10-len(word))
+		}
+
+		// handle token display
+		token := "—" + strings.Repeat(" ", 10)
+		if pair.Token != 0 {
+			token = gut.Base62(pair.Token)
+		}
+
+		output := fmt.Sprintf("%s %s ", word, token)
+		fmt.Print(output)
+
+		// add newline
 		if (i+1)%tokenPerLine == 0 {
 			fmt.Println()
 		}
 	}
 
 	// add final newline
-	if len(tokens)%tokenPerLine != 0 {
+	if len(pairs)%tokenPerLine != 0 {
 		fmt.Println()
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/bsthun/gut"
 	"go.scnd.dev/open/syrup/nano/lib/common/config"
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
+	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 	"go.uber.org/fx"
 )
 
@@ -41,8 +42,11 @@ func main() {
 }
 
 func invoke(pogreb *pogreb.Pogreb, filePath string) {
-	// load special word
-	LoadSpecialWord()
+	// load special words with pogreb to pre-cache tokens
+	LoadWordSpecial(pogreb)
+
+	// load word modifiers from pogreb
+	LoadWordModifier(pogreb)
 
 	// open and read file
 	file, err := os.Open(filePath)
@@ -53,19 +57,19 @@ func invoke(pogreb *pogreb.Pogreb, filePath string) {
 
 	// process file line by line
 	scanner := bufio.NewScanner(file)
-	var tokens []string
+	var pairs []tuple.WordPair
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		lineTokens := ProcessLine(pogreb, line)
-		tokens = append(tokens, lineTokens...)
+		linePairs := ProcessLine(pogreb, line)
+		pairs = append(pairs, linePairs...)
 	}
 
 	if err := scanner.Err(); err != nil {
 		gut.Fatal("Error reading file: ", err)
 	}
 
-	// output formatted tokens
-	OutputTokens(tokens)
+	// output formatted token
+	OutputToken(pairs)
 	os.Exit(0)
 }

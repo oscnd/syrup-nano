@@ -1,14 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"unicode"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
+	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
-func ProcessLine(pogreb *pogreb.Pogreb, line string) []string {
-	var tokens []string
+func ProcessLine(pogreb *pogreb.Pogreb, line string) []tuple.WordPair {
+	var pairs []tuple.WordPair
 	var current []rune
 	i := 0
 
@@ -28,16 +30,22 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []string {
 				}
 
 				if string(currentWord) == possibleWord {
-					// add accumulated characters as a word
+					// case of accumulated characters before this special word, add them as a word
 					if len(current) > 0 {
-						token := ProcessWord(pogreb, string(current))
-						tokens = append(tokens, token)
+						wordPair := ProcessWord(pogreb, string(current))
+						pairs = append(pairs, wordPair)
 						current = current[:0] // clear accumulated characters
 					}
 
 					// add special word
-					token := ProcessWord(pogreb, possibleWord)
-					tokens = append(tokens, token)
+					tokenNo, exists := wordSpecialToken[possibleWord]
+					if !exists {
+						fmt.Printf("special word token not found for word: %s\n", possibleWord)
+					}
+					pairs = append(pairs, tuple.WordPair{
+						Word:  "#" + possibleWord,
+						Token: tokenNo,
+					})
 					i += len(possibleWord)
 					goto nextIteration
 				}
@@ -46,22 +54,23 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []string {
 
 		// check if character is uppercase (modifier)
 		if unicode.IsUpper(char) {
-			// add accumulated characters as a word
+			// case of accumulated characters before this modifier, add them as a word
 			if len(current) > 0 {
-				token := ProcessWord(pogreb, string(current))
-				tokens = append(tokens, token)
+				wordPair := ProcessWord(pogreb, string(current))
+				pairs = append(pairs, wordPair)
 				current = current[:0] // clear accumulated characters
 			}
 
-			// add the modifier as a separate token
-			tokens = append(tokens, enum.WordModifier[enum.WordModifierNextCamel])
-
-			// add modifier
-			char = unicode.ToLower(char)
+			// add modifier token
+			modifierToken := enum.WordModifier[enum.WordModifierNextCamel]
+			pairs = append(pairs, tuple.WordPair{
+				Word:  string(enum.WordModifierNextCamel),
+				Token: modifierToken,
+			})
 		}
 
 		// add character to current word
-		current = append(current, char)
+		current = append(current, unicode.ToLower(rune(line[i])))
 		i++
 
 	nextIteration:
@@ -69,9 +78,9 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []string {
 
 	// add any remaining characters as a word
 	if len(current) > 0 {
-		token := ProcessWord(pogreb, string(current))
-		tokens = append(tokens, token)
+		wordPair := ProcessWord(pogreb, string(current))
+		pairs = append(pairs, wordPair)
 	}
 
-	return tokens
+	return pairs
 }
