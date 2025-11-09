@@ -6,6 +6,7 @@ import (
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
+	"go.scnd.dev/open/syrup/nano/lib/util"
 )
 
 func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
@@ -41,7 +42,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
 					if err != nil || value == nil {
 						fmt.Printf("error retrieving special token %s: %v", possibleWord, err)
 					}
-					tokenNo, _ := MapperPayloadExtract(value)
+					tokenNo, _ := util.MapperPayloadExtract(value)
 					values = append(values, tokenNo)
 					i += len(possibleWord)
 					goto nextIteration

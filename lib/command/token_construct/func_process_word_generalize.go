@@ -9,6 +9,10 @@ import (
 )
 
 func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) ([]byte, enum.WordModifierType) {
+	if len(word) < 4 {
+		return nil, ""
+	}
+
 	if strings.HasSuffix(word, "ies") {
 		if value, err := pogreb.WordMapper.Get([]byte(string(word[:len(word)-3]) + "y")); err != nil {
 			fmt.Printf("progreb error on generalize -ies %s: %v\n", word, err)

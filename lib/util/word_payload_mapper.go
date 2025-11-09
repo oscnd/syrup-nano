@@ -1,6 +1,6 @@
-package main
+package util
 
-func UtilBytesToUint64(b []byte) uint64 {
+func BytesToUint64(b []byte) uint64 {
 	return uint64(b[0])<<56 |
 		uint64(b[1])<<48 |
 		uint64(b[2])<<40 |
@@ -11,7 +11,7 @@ func UtilBytesToUint64(b []byte) uint64 {
 		uint64(b[7])
 }
 
-func UtilUint64ToBytes(value uint64) []byte {
+func Uint64ToBytes(value uint64) []byte {
 	return []byte{
 		byte(value >> 56),
 		byte(value >> 48),
@@ -25,16 +25,16 @@ func UtilUint64ToBytes(value uint64) []byte {
 }
 
 func MapperPayloadExtract(value []byte) (uint64, uint64) {
-	tokenNo := UtilBytesToUint64(value[0:8])
-	count := UtilBytesToUint64(value[8:16])
+	tokenNo := BytesToUint64(value[0:8])
+	count := BytesToUint64(value[8:16])
 
 	return tokenNo, count
 }
 
 func MapperPayloadBuild(tokenNo uint64, count uint64) []byte {
 	payload := make([]byte, 16)
-	copy(payload[0:8], UtilUint64ToBytes(tokenNo))
-	copy(payload[8:16], UtilUint64ToBytes(count))
+	copy(payload[0:8], Uint64ToBytes(tokenNo))
+	copy(payload[8:16], Uint64ToBytes(count))
 
 	return payload
 }

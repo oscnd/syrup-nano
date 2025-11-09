@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
+	"go.scnd.dev/open/syrup/nano/lib/util"
 )
 
 func ProcessWord(pogreb *pogreb.Pogreb, no *uint64, word string) {
@@ -26,7 +27,7 @@ func ProcessWord(pogreb *pogreb.Pogreb, no *uint64, word string) {
 		tokenNo := *no
 		count := uint64(1)
 
-		if err := pogreb.WordMapper.Put([]byte(word), MapperPayloadBuild(tokenNo, count)); err != nil {
+		if err := pogreb.WordMapper.Put([]byte(word), util.MapperPayloadBuild(tokenNo, count)); err != nil {
 			fmt.Printf("error inserting word %s: %v\n", word, err)
 			return
 		}
@@ -37,9 +38,9 @@ func ProcessWord(pogreb *pogreb.Pogreb, no *uint64, word string) {
 
 update:
 	// case word exists
-	tokenNo, count := MapperPayloadExtract(value)
+	tokenNo, count := util.MapperPayloadExtract(value)
 	count++
-	if err := pogreb.WordMapper.Put([]byte(word), MapperPayloadBuild(tokenNo, count)); err != nil {
+	if err := pogreb.WordMapper.Put([]byte(word), util.MapperPayloadBuild(tokenNo, count)); err != nil {
 		fmt.Printf("error updating word %s: %v\n", word, err)
 		return
 	}
