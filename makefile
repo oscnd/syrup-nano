@@ -4,4 +4,4 @@ link:
 
 .PHONY: clean
 clean:
-	jupyter nbconvert --clear-output --inplace */*.ipynb
+	jupyter nbconvert --clear-output --ClearMetadataPreprocessor.enabled=True --inplace */*.ipynb
