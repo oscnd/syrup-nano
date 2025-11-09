@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Log               *uint8  `yaml:"log" validate:"min=0,max=5"`
+	WordSpecialDict   *string `yaml:"wordSpecialDict" validate:"required"`
 	PogrebWordMapper  *string `yaml:"pogrebWordMapper"`
 	PogrebTokenMapper *string `yaml:"pogrebTokenMapper"`
 	PogrebWritable    *bool   `yaml:"pogrebWritable" validate:"required"`

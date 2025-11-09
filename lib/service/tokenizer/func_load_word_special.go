@@ -12,9 +12,8 @@ import (
 )
 
 func (r *Service) LoadWordSpecial() {
-	// glob jsonl files for special words
-	pattern := "dataset/tokenizer/word_*.jsonl"
-	matches, err := filepath.Glob(pattern)
+	// find special words declaration
+	matches, err := filepath.Glob(*r.config.WordSpecialDict)
 	if err != nil {
 		fmt.Printf("glob error: %v\n", err)
 		return

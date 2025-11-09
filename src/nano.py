@@ -51,4 +51,4 @@ class Nano:
             # Parse JSON result into Python list
             return json.loads(result_str)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse JSON result: {e}\nRaw result: {result_str}")
+            raise ValueError(f"failed to decode json: {e}")
