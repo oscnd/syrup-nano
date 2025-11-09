@@ -5,6 +5,7 @@ import (
 	"unicode"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
+	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 )
 
 func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
@@ -36,9 +37,6 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
 					}
 
 					// found a matching special token
-					if possibleWord == "string" {
-						println(string(current))
-					}
 					value, err := pogreb.WordMapper.Get([]byte(possibleWord))
 					if err != nil || value == nil {
 						fmt.Printf("error retrieving special token %s: %v", possibleWord, err)
@@ -60,7 +58,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
 			}
 
 			// add modifier
-			values = append(values, wordModifier[WordModifierNextCamel])
+			values = append(values, enum.WordModifier[enum.WordModifierNextCamel])
 
 			// TODO: handle next upper
 		}

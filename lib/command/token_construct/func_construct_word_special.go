@@ -8,30 +8,9 @@ import (
 	"path/filepath"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
+	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
-
-type WordModifierType string
-
-const (
-	WordModifierNextCamel  WordModifierType = "#nextCamel#"
-	WordModifierNextUpper  WordModifierType = "#nextUpper#"
-	WordModifierNextPlural WordModifierType = "#nextPlural#"
-	WordModifierNextEd     WordModifierType = "#nextEd#"
-	WordModifierNextEr     WordModifierType = "#nextEr#"
-	WordModifierNextIng    WordModifierType = "#nextIng#"
-	WordModifierNextLy     WordModifierType = "#nextLy#"
-)
-
-var wordModifier = map[WordModifierType]uint64{
-	WordModifierNextCamel:  0,
-	WordModifierNextUpper:  0,
-	WordModifierNextPlural: 0,
-	WordModifierNextEd:     0,
-	WordModifierNextEr:     0,
-	WordModifierNextIng:    0,
-	WordModifierNextLy:     0,
-}
 
 var wordSpecialMapper = make(map[string]struct{})
 var wordSpecialLookup = make(map[string][]string)
@@ -46,9 +25,9 @@ func ConstructWordSpecial(pogreb *pogreb.Pogreb, no *uint64) {
 	}
 
 	// * process word modifier
-	for key := range wordModifier {
+	for key := range enum.WordModifier {
 		ProcessWord(pogreb, no, string(key))
-		wordModifier[key] = *no
+		enum.WordModifier[key] = *no
 	}
 
 	// * process word special

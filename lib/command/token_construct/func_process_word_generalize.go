@@ -5,14 +5,15 @@ import (
 	"strings"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
+	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 )
 
-func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) ([]byte, WordModifierType) {
+func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) ([]byte, enum.WordModifierType) {
 	if strings.HasSuffix(word, "ies") {
 		if value, err := pogreb.WordMapper.Get([]byte(string(word[:len(word)-3]) + "y")); err != nil {
 			fmt.Printf("progreb error on generalize -ies %s: %v\n", word, err)
 		} else if value != nil {
-			return value, WordModifierNextPlural
+			return value, enum.WordModifierNextPlural
 		}
 	}
 
@@ -20,7 +21,7 @@ func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) ([]byte, WordModi
 		if value, err := pogreb.WordMapper.Get([]byte(word[:len(word)-2])); err != nil {
 			fmt.Printf("progreb error on generalize -es %s: %v\n", word, err)
 		} else if value != nil {
-			return value, WordModifierNextPlural
+			return value, enum.WordModifierNextPlural
 		}
 	}
 
@@ -28,7 +29,7 @@ func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) ([]byte, WordModi
 		if value, err := pogreb.WordMapper.Get([]byte(word[:len(word)-1])); err != nil {
 			fmt.Printf("progreb error on generalize -s %s: %v\n", word, err)
 		} else if value != nil {
-			return value, WordModifierNextPlural
+			return value, enum.WordModifierNextPlural
 		}
 	}
 
@@ -36,7 +37,7 @@ func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) ([]byte, WordModi
 		if value, err := pogreb.WordMapper.Get([]byte(word[:len(word)-2])); err != nil {
 			fmt.Printf("progreb error on generalize -ed %s: %v\n", word, err)
 		} else if value != nil {
-			return value, WordModifierNextEd
+			return value, enum.WordModifierNextEd
 		}
 	}
 
@@ -44,7 +45,7 @@ func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) ([]byte, WordModi
 		if value, err := pogreb.WordMapper.Get([]byte(word[:len(word)-2])); err != nil {
 			fmt.Printf("progreb error on generalize -er %s: %v\n", word, err)
 		} else if value != nil {
-			return value, WordModifierNextEr
+			return value, enum.WordModifierNextEr
 		}
 	}
 
@@ -52,7 +53,7 @@ func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) ([]byte, WordModi
 		if value, err := pogreb.WordMapper.Get([]byte(word[:len(word)-3])); err != nil {
 			fmt.Printf("progreb error on generalize -ing %s: %v\n", word, err)
 		} else if value != nil {
-			return value, WordModifierNextIng
+			return value, enum.WordModifierNextIng
 		}
 	}
 
@@ -60,7 +61,7 @@ func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) ([]byte, WordModi
 		if value, err := pogreb.WordMapper.Get([]byte(word[:len(word)-2])); err != nil {
 			fmt.Printf("progreb error on generalize -ly %s: %v\n", word, err)
 		} else if value != nil {
-			return value, WordModifierNextLy
+			return value, enum.WordModifierNextLy
 		}
 	}
 
