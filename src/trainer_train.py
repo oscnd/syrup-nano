@@ -14,6 +14,7 @@ import time
 import math
 import pickle
 import json
+import glob
 from contextlib import nullcontext
 import numpy as np
 import torch
@@ -38,7 +39,7 @@ wandb_project = 'nano'
 wandb_run_name = 'nano-run'
 
 # data
-dataset = 'download/code/test1.jsonl'
+dataset = 'download/code/*.jsonl'
 train_split = 0.9
 gradient_accumulation_steps = 1
 batch_size = 64
@@ -88,35 +89,48 @@ def prepare_data():
     print(f"preparing data from {dataset}...")
     os.makedirs(out_dir, exist_ok=True)
 
-    # Initialize tokenizer
+    # get jsonl dataset files
+    jsonl_files = glob.glob(dataset)
+
+    if not jsonl_files:
+        raise FileNotFoundError(f"no jsonl files found in {dataset}")
+
+    print(f"found {len(jsonl_files)} jsonl files:")
+    for file_path in jsonl_files:
+        print(f"  - {file_path}")
+
+    # initialize tokenizer
     nano = Nano()
 
-    # Read and tokenize all data
+    # read and tokenize all data
     all_tokens = []
 
-    with open(dataset, 'r', encoding='utf-8') as file:
-        for line_num, line in enumerate(file):
-            if line_num % 100 == 0:
-                print(f"Processing line {line_num}...")
+    for file_path in jsonl_files:
+        print(f"\nProcessing file: {file_path}")
 
-            try:
-                data = json.loads(line.strip())
-                content = data.get('content', '')
+        with open(file_path, 'r', encoding='utf-8') as file:
+            for line_num, line in enumerate(file):
+                if line_num % 100 == 0:
+                    print(f"  line {line_num}...")
 
-                if content:
-                    result = nano.encode(content)
-                    parsed = WordEncodeResult(result)
-                    tokens = parsed.to_token_list()
-                    all_tokens.extend(tokens)
+                try:
+                    data = json.loads(line.strip())
+                    content = data.get('content', '')
 
-            except json.JSONDecodeError as e:
-                print(f"error parsing line {line_num}: {e}")
-                continue
+                    if content:
+                        result = nano.encode(content)
+                        parsed = WordEncodeResult(result)
+                        tokens = parsed.to_token_list()
+                        all_tokens.extend(tokens)
 
-    print(f"total tokens: {len(all_tokens):,}")
+                except json.JSONDecodeError as e:
+                    print(f"  error parsing line {line_num}: {e}")
+                    continue
+
+    print(f"\ntotal tokens: {len(all_tokens):,}")
 
     # convert to numpy array
-    all_tokens = np.array(all_tokens, dtype=np.uint16)
+    all_tokens = np.array(all_tokens, dtype=np.uint32)
 
     # calculate vocab size
     vocab_size = int(np.max(all_tokens)) + 1
@@ -177,7 +191,7 @@ if master_process:
     os.makedirs(out_dir, exist_ok=True)
 
 torch.manual_seed(1337 + seed_offset)
-torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cuda.matmul.fp32_precision = 'tf32'
 torch.backends.cudnn.conv.fp32_precision = 'tf32'
 device_type = 'cuda' if 'cuda' in device else 'cpu'
 ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[dtype]
