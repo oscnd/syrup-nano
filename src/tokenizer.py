@@ -6,7 +6,7 @@ class WordPair:
         self.token = token
 
     def __repr__(self):
-        return f"WordPair(word={self.word!r}, token={self.token})"
+        return f"WordPair({self.word!r}, {self.token})"
 
     def to_dict(self):
         return {'word': self.word, 'token': self.token}

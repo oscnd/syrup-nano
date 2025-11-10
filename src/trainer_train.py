@@ -72,12 +72,12 @@ backend = 'nccl'
 # system
 device = 'cuda'
 dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16'
-compile = True
+compilation = True
+
 
 # * data preparation function
 def prepare_data():
-    """Prepare data from JSONL file and split into train/val sets."""
-    # Check if data already exists
+    # check if data already exists
     train_file = os.path.join(out_dir, 'train.bin')
     val_file = os.path.join(out_dir, 'val.bin')
     meta_file = os.path.join(out_dir, 'meta.pkl')
@@ -101,6 +101,7 @@ def prepare_data():
 
     # initialize tokenizer
     nano = Nano()
+    time.sleep(1)
 
     # read and tokenize all data
     all_tokens = []
@@ -136,7 +137,7 @@ def prepare_data():
     vocab_size = int(np.max(all_tokens)) + 1
     print(f"vocabulary size: {vocab_size:,}")
 
-    # Split into train and validation
+    # split into train and validation
     split_idx = int(len(all_tokens) * train_split)
     train_tokens = all_tokens[:split_idx]
     val_tokens = all_tokens[split_idx:]
@@ -162,8 +163,7 @@ def prepare_data():
     return out_dir
 
 
-# -----------------------------------------------------------------------------
-# Prepare data first
+# prepare data first
 prepare_data()
 
 # various inits, derived attributes, I/O setup
@@ -201,9 +201,9 @@ ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=
 # data loader
 def get_batch(split):
     if split == 'train':
-        data = np.memmap(os.path.join(out_dir, 'train.bin'), dtype=np.uint16, mode='r')
+        data = np.memmap(os.path.join(out_dir, 'train.bin'), dtype=np.uint32, mode='r')
     else:
-        data = np.memmap(os.path.join(out_dir, 'val.bin'), dtype=np.uint16, mode='r')
+        data = np.memmap(os.path.join(out_dir, 'val.bin'), dtype=np.uint32, mode='r')
     ix = torch.randint(len(data) - block_size, (batch_size,))
     x = torch.stack([torch.from_numpy((data[i:i + block_size]).astype(np.int64)) for i in ix])
     y = torch.stack([torch.from_numpy((data[i + 1:i + 1 + block_size]).astype(np.int64)) for i in ix])
@@ -237,13 +237,13 @@ model = Module(gptconf)
 model.to(device)
 
 # initialize a GradScaler
-scaler = torch.amp.GradScaler('cuda', enabled=(dtype == 'float16'))
+scaler = torch.amp.GradScaler('cuda', enabled=(dtype == 'bfloat16'))
 
 # optimizer
 optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
 
 # compile the model
-if compile:
+if compilation:
     print("compiling the model...")
     unoptimized_model = model
     model = torch.compile(model)
@@ -251,6 +251,7 @@ if compile:
 # wrap model into DDP container
 if ddp:
     model = DistributedDataParallel(model, device_ids=[ddp_local_rank])
+
 
 # estimate loss
 @torch.no_grad()
@@ -280,9 +281,11 @@ def get_lr(it):
     coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio))
     return min_lr + coeff * (learning_rate - min_lr)
 
+
 # logging
 if wandb_log and master_process:
     import wandb
+
     wandb.init(project=wandb_project, name=wandb_run_name, config=None)
 
 # training loop
