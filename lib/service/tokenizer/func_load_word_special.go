@@ -54,7 +54,7 @@ func (r *Service) LoadWordSpecialFromFile(filePath string) {
 				fmt.Printf("special word %s not found in pogreb\n", word.Word)
 				r.WordSpecialToken[word.Word] = 0
 			} else {
-				tokenNo, _ := util.MapperPayloadExtract(value)
+				_, tokenNo, _ := util.MapperPayloadExtract(value)
 				r.WordSpecialToken[word.Word] = tokenNo
 			}
 		}

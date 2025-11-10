@@ -10,7 +10,7 @@ type Server interface {
 	LoadWordModifier()
 	LoadWordSpecial()
 	ProcessLine(line string) []*tuple.WordPair
-	ProcessWord(word string) *tuple.WordPair
+	ProcessWord(word string) []*tuple.WordPair
 	Decode(token uint64) string
 }
 

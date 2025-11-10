@@ -21,7 +21,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 			// case of accumulated characters before, add them as a word
 			if len(current) > 0 {
 				wordPair := r.ProcessWord(string(current))
-				pairs = append(pairs, wordPair)
+				pairs = append(pairs, wordPair...)
 				current = current[:0] // clear accumulated characters
 			}
 
@@ -43,7 +43,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 			// case of accumulated characters before this modifier, add them as a word
 			if len(current) > 0 {
 				wordPair := r.ProcessWord(string(current))
-				pairs = append(pairs, wordPair)
+				pairs = append(pairs, wordPair...)
 				current = current[:0] // clear accumulated characters
 			}
 
@@ -75,7 +75,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 				})
 
 				wordPair := r.ProcessWord(line[i:j])
-				pairs = append(pairs, wordPair)
+				pairs = append(pairs, wordPair...)
 				i = j
 				goto nextIteration
 			} else {
@@ -96,7 +96,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 	// add any remaining characters as a word
 	if len(current) > 0 {
 		wordPair := r.ProcessWord(string(current))
-		pairs = append(pairs, wordPair)
+		pairs = append(pairs, wordPair...)
 	}
 
 	return pairs

@@ -60,7 +60,7 @@ func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb, tokenizer tokenizer
 		line := scanner.Text()
 		linePairs := tokenizer.ProcessLine(line)
 		pairs = append(pairs, linePairs...)
-		pairs = append(pairs, endLinePair)
+		pairs = append(pairs, endLinePair...)
 	}
 
 	if err := scanner.Err(); err != nil {

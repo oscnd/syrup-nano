@@ -8,7 +8,7 @@ import (
 )
 
 func (r *Service) LoadWordModifier() {
-	// loop through modifiers
+	// loop through word modifiers
 	for key := range enum.WordModifier {
 		modifierName := string(key)
 		value, err := r.pogreb.WordMapper.Get([]byte(modifierName))
@@ -17,8 +17,22 @@ func (r *Service) LoadWordModifier() {
 			continue
 		}
 
-		tokenNo, _ := util.MapperPayloadExtract(value)
+		_, tokenNo, _ := util.MapperPayloadExtract(value)
 		enum.WordModifier[key] = tokenNo
 		fmt.Printf("loaded modifier %s with tokenNo: %d\n", modifierName, tokenNo)
+	}
+
+	// loop through word suffix
+	for key := range enum.WordSuffix {
+		suffixName := string(key)
+		value, err := r.pogreb.WordMapper.Get([]byte(suffixName))
+		if err != nil || value == nil {
+			fmt.Printf("suffix modifier %s not found in pogreb\n", suffixName)
+			continue
+		}
+
+		_, tokenNo, _ := util.MapperPayloadExtract(value)
+		enum.WordSuffix[key].TokenNo = tokenNo
+		fmt.Printf("loaded suffix modifier %s with tokenNo: %d\n", suffixName, tokenNo)
 	}
 }
