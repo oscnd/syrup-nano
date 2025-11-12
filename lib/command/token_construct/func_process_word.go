@@ -11,7 +11,7 @@ import (
 func ProcessWord(pogreb *pogreb.Pogreb, no *uint64, word string) {
 	// * generalize word
 	special := false
-	if possibleWords, ok := WordSpecialLookup[string(word[0])]; ok {
+	if possibleWords, ok := WordSpecialLookup[rune(word[0])]; ok {
 		for _, possibleWord := range possibleWords {
 			if word == possibleWord {
 				special = true

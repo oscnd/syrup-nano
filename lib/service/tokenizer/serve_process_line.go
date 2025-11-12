@@ -2,6 +2,7 @@ package tokenizer
 
 import (
 	"fmt"
+	"strings"
 	"unicode"
 
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
@@ -50,7 +51,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 			// check for uppercase consecutiveness
 			consecutiveUpper := false
 			var j int
-			for j = i; j < len(line); j++ {
+			for j = i + 1; j < len(line); j++ {
 				// break on special word check
 				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != "" {
 					consecutiveUpper = true
@@ -74,7 +75,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 					Token: enum.WordModifier[enum.WordModifierNextUpper],
 				})
 
-				wordPair := r.ProcessWord(line[i:j])
+				wordPair := r.ProcessWord(strings.ToLower(line[i:j]))
 				pairs = append(pairs, wordPair...)
 				i = j
 				goto nextIteration
@@ -83,6 +84,9 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 					Word:  string(enum.WordModifierNextCamel),
 					Token: enum.WordModifier[enum.WordModifierNextCamel],
 				})
+				current = append(current, unicode.ToLower(rune(line[i])))
+				i++
+				goto nextIteration
 			}
 		}
 

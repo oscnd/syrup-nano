@@ -13,10 +13,10 @@ import (
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
-var WordSpecialLookup = make(map[string][]string)
+var WordSpecialLookup = make(map[rune][]string)
 
 func ConstructWordSpecialAppend(word string) {
-	firstChar := string(word[0])
+	firstChar := rune(word[0])
 	WordSpecialLookup[firstChar] = append(WordSpecialLookup[firstChar], word)
 	slices.SortFunc(WordSpecialLookup[firstChar], func(a, b string) int {
 		if len(a) != len(b) {
