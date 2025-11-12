@@ -1,4 +1,4 @@
-package main
+package constructor
 
 import (
 	"bufio"
@@ -8,17 +8,14 @@ import (
 	"path/filepath"
 	"slices"
 
-	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
-var WordSpecialLookup = make(map[rune][]string)
-
-func ConstructWordSpecialAppend(word string) {
+func (r *Service) ConstructWordSpecialAppend(word string) {
 	firstChar := rune(word[0])
-	WordSpecialLookup[firstChar] = append(WordSpecialLookup[firstChar], word)
-	slices.SortFunc(WordSpecialLookup[firstChar], func(a, b string) int {
+	r.WordSpecialLookup[firstChar] = append(r.WordSpecialLookup[firstChar], word)
+	slices.SortFunc(r.WordSpecialLookup[firstChar], func(a, b string) int {
 		if len(a) != len(b) {
 			return len(a) - len(b)
 		}
@@ -32,9 +29,8 @@ func ConstructWordSpecialAppend(word string) {
 	})
 }
 
-func ConstructWordSpecial(pogreb *pogreb.Pogreb, no *uint64) {
+func (r *Service) ConstructWordSpecial(pattern string) {
 	// * glob jsonl files
-	pattern := "dataset/tokenizer/word_*.jsonl"
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
 		fmt.Printf("glob error: %v\n", err)
@@ -43,23 +39,23 @@ func ConstructWordSpecial(pogreb *pogreb.Pogreb, no *uint64) {
 
 	// * process word modifier
 	for key := range enum.WordModifier {
-		ProcessWord(pogreb, no, string(key))
-		enum.WordModifier[key] = *no
+		r.ProcessWord(string(key))
+		enum.WordModifier[key] = r.no
 	}
 
 	// * process word suffix
 	for key := range enum.WordSuffix {
-		ProcessWord(pogreb, no, string(key))
-		enum.WordSuffix[key].TokenNo = *no
+		r.ProcessWord(string(key))
+		enum.WordSuffix[key].TokenNo = r.no
 	}
 
 	// * process word special
 	for _, filePath := range matches {
-		ConstructWordSpecialFile(pogreb, no, filePath)
+		r.ConstructWordSpecialFile(filePath)
 	}
 }
 
-func ConstructWordSpecialFile(pogreb *pogreb.Pogreb, no *uint64, filePath string) {
+func (r *Service) ConstructWordSpecialFile(filePath string) {
 	// * open the file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -80,10 +76,10 @@ func ConstructWordSpecialFile(pogreb *pogreb.Pogreb, no *uint64, filePath string
 		}
 
 		// * set word special lookup
-		ConstructWordSpecialAppend(word.Word)
+		r.ConstructWordSpecialAppend(word.Word)
 
 		// * process the word
-		ProcessWord(pogreb, no, word.Word)
+		r.ProcessWord(word.Word)
 	}
 
 	if err := scanner.Err(); err != nil {

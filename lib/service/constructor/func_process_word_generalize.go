@@ -1,11 +1,10 @@
-package main
+package constructor
 
 import (
-	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 )
 
-func ProcessWordGeneralize(pogreb *pogreb.Pogreb, word string) (string, enum.WordSuffixType) {
+func (r *Service) ProcessWordGeneralize(word string) (string, enum.WordSuffixType) {
 	if len(word) < 4 {
 		return word, ""
 	}

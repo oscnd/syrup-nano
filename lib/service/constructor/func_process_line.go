@@ -1,23 +1,22 @@
-package main
+package constructor
 
 import (
 	"fmt"
 	"strings"
 	"unicode"
 
-	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 	"go.scnd.dev/open/syrup/nano/lib/util"
 )
 
-func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
+func (r *Service) ProcessLine(line string) []any {
 	var values []any
 	var current []rune
 	i := 0
 
 	for i < len(line) {
 		// check for special word using WordSpecialCheck utility
-		specialWord := util.WordSpecialCheck(line, i, WordSpecialLookup)
+		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
 		if specialWord != "" {
 			// case of accumulated characters before, add them as a word
 			if len(current) > 0 {
@@ -26,7 +25,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
 			}
 
 			// found a matching special token
-			value, err := pogreb.WordMapper.Get([]byte(specialWord))
+			value, err := r.pogreb.WordMapper.Get([]byte(specialWord))
 			if err != nil || value == nil {
 				fmt.Printf("error retrieving special token %s: %v\n", specialWord, err)
 			}
@@ -49,7 +48,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
 			var j int
 			for j = i; j < len(line); j++ {
 				// break on special word check
-				if util.WordSpecialCheck(line, j, WordSpecialLookup) != "" {
+				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != "" {
 					consecutiveUpper = true
 					break
 				}
