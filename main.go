@@ -65,11 +65,6 @@ func decode(token C.ulonglong) *C.char {
 	return C.CString(result)
 }
 
-//export clear
-func clear() {
-	app.Constructor.Clear()
-}
-
 //export get_num
 func get_num() C.ulonglong {
 	return C.ulonglong(app.Constructor.GetNum())

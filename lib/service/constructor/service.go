@@ -6,7 +6,6 @@ import (
 )
 
 type Server interface {
-	Clear()
 	ConstructWordSpecial(pattern string)
 	ConstructFromGlob(pattern string)
 	ConstructContent(filename string, content string)
