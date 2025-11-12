@@ -26,7 +26,7 @@ from tokenizer import WordEncodeResult
 
 # configuration
 out_dir = '.local/output'
-eval_interval = 250
+eval_interval = 500
 log_interval = 100
 eval_iters = 200
 eval_only = False
@@ -231,8 +231,8 @@ model_args = dict(n_layer=n_layer, n_head=n_head, n_embd=n_embd, block_size=bloc
 
 print("initializing a new model from scratch")
 model_args['vocab_size'] = meta_vocab_size
-gptconf = Config(**model_args)
-model = Module(gptconf)
+config = Config(**model_args)
+model = Module(config)
 
 model.to(device)
 
