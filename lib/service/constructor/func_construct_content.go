@@ -22,11 +22,11 @@ func (r *Service) ConstructFromGlob(pattern string) {
 
 	// * process each code file
 	for _, filePath := range matches {
-		r.ConstructContentFile(filePath)
+		r.ConstructFromFile(filePath)
 	}
 }
 
-func (r *Service) ConstructContentFile(filePath string) {
+func (r *Service) ConstructFromFile(filePath string) {
 	// * open the file
 	file, err := os.Open(filePath)
 	if err != nil {

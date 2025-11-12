@@ -80,7 +80,17 @@ func construct_from_glob(pattern *C.char) {
 	app.Constructor.ConstructFromGlob(C.GoString(pattern))
 }
 
+//export construct_from_file
+func construct_from_file(filename *C.char) {
+	app.Constructor.ConstructFromFile(C.GoString(filename))
+}
+
 //export construct_content
 func construct_content(filename *C.char, content *C.char) {
 	app.Constructor.ConstructContent(C.GoString(filename), C.GoString(content))
+}
+
+//export shutdown
+func shutdown() {
+	app.Shutdown()
 }

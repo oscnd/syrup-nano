@@ -28,6 +28,24 @@ class Nano:
         self.lib.decode.argtypes = [ctypes.c_ulonglong]
         self.lib.decode.restype = ctypes.c_char_p
 
+        self.lib.get_num.argtypes = []
+        self.lib.get_num.restype = ctypes.c_ulonglong
+
+        self.lib.construct_word_special.argtypes = [ctypes.c_char_p]
+        self.lib.construct_word_special.restype = None
+
+        self.lib.construct_from_glob.argtypes = [ctypes.c_char_p]
+        self.lib.construct_from_glob.restype = None
+
+        self.lib.construct_content.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+        self.lib.construct_content.restype = None
+
+        self.lib.construct_from_file.argtypes = [ctypes.c_char_p]
+        self.lib.construct_from_file.restype = None
+
+        self.lib.shutdown.argtypes = []
+        self.lib.shutdown.restype = None
+
         # library initialization
         self.lib.load()
 
@@ -58,3 +76,33 @@ class Nano:
         result_str = ctypes.string_at(result).decode('utf-8')
 
         return result_str
+
+    def get_num(self) -> int:
+        """Get current token counter value"""
+        result = self.lib.get_num()
+        return result
+
+    def construct_word_special(self, pattern: str):
+        """Construct word special tokens from files matching the glob pattern"""
+        c_pattern = ctypes.create_string_buffer(pattern.encode('utf-8'))
+        self.lib.construct_word_special(c_pattern)
+
+    def construct_from_glob(self, pattern: str):
+        """Construct tokens from JSONL files matching the glob pattern"""
+        c_pattern = ctypes.create_string_buffer(pattern.encode('utf-8'))
+        self.lib.construct_from_glob(c_pattern)
+
+    def construct_from_file(self, filename: str):
+        """Process a file as content"""
+        c_filename = ctypes.create_string_buffer(filename.encode('utf-8'))
+        self.lib.construct_from_file(c_filename)
+
+    def construct_content(self, filename: str, content: str):
+        """Construct tokens from raw content string"""
+        c_filename = ctypes.create_string_buffer(filename.encode('utf-8'))
+        c_content = ctypes.create_string_buffer(content.encode('utf-8'))
+        self.lib.construct_content(c_filename, c_content)
+
+    def shutdown(self):
+        """Shutdown the nano application"""
+        self.lib.shutdown()

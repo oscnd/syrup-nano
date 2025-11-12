@@ -22,6 +22,9 @@ func Init() *Config {
 		if _, err := os.Stat("config.yml"); err == nil {
 			path = "config.yml"
 		}
+		if _, err := os.Stat(".local/config.yml"); err == nil {
+			path = ".local/config.yml"
+		}
 		if _, err := os.Stat("../.local/config.yml"); err == nil {
 			path = "../.local/config.yml"
 		}
@@ -33,17 +36,17 @@ func Init() *Config {
 	// * read config
 	yml, err := os.ReadFile(path)
 	if err != nil {
-		gut.Fatal("Unable to read configuration file", err)
+		gut.Fatal("unable to read configuration file", err)
 	}
 
 	// * parse config
 	if err := yaml.Unmarshal(yml, config); err != nil {
-		gut.Fatal("Unable to parse configuration file", err)
+		gut.Fatal("unable to parse configuration file", err)
 	}
 
 	// * validate config
 	if err := gut.Validate(config); err != nil {
-		gut.Fatal("Invalid configuration", err)
+		gut.Fatal("invalid configuration", err)
 	}
 
 	return config

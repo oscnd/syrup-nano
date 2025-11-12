@@ -8,6 +8,7 @@ import (
 type Server interface {
 	ConstructWordSpecial(pattern string)
 	ConstructFromGlob(pattern string)
+	ConstructFromFile(filename string)
 	ConstructContent(filename string, content string)
 	GetNum() uint64
 }
