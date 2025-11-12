@@ -17,7 +17,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
 
 	for i < len(line) {
 		// check for special word using WordSpecialCheck utility
-		specialWord := util.WordSpecialCheck(line, i, wordSpecialLookup)
+		specialWord := util.WordSpecialCheck(line, i, WordSpecialLookup)
 		if specialWord != "" {
 			// case of accumulated characters before, add them as a word
 			if len(current) > 0 {
@@ -49,7 +49,7 @@ func ProcessLine(pogreb *pogreb.Pogreb, line string) []any {
 			var j int
 			for j = i; j < len(line); j++ {
 				// break on special word check
-				if util.WordSpecialCheck(line, j, wordSpecialLookup) != "" {
+				if util.WordSpecialCheck(line, j, WordSpecialLookup) != "" {
 					consecutiveUpper = true
 					break
 				}

@@ -36,7 +36,7 @@ func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("%s %s", gut.Base62(util.BytesToUint64(val)), string(key))
+		log.Printf("%11d %s %11d %s\n", util.BytesToUint64(val[8:16]), gut.Base62(util.BytesToUint64(val[8:16])), util.BytesToUint64(val[16:24]), string(key))
 		keys = append(keys, string(key))
 	}
 

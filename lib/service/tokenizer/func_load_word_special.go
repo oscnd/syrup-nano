@@ -45,8 +45,8 @@ func (r *Service) LoadWordSpecialFromFile(filePath string) {
 
 		// set word special lookup
 		if len(word.Word) > 0 {
-			firstChar := string(word.Word[0])
-			r.WordSpecialLookup[firstChar] = append(r.WordSpecialLookup[firstChar], word.Word)
+			// append to word special list
+			r.WordSpecialAppend(word.Word)
 
 			// load and fetch pogreb for token and store in map
 			value, err := r.pogreb.WordMapper.Get([]byte(word.Word))

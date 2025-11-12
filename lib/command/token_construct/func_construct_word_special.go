@@ -6,13 +6,31 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
-var wordSpecialLookup = make(map[string][]string)
+var WordSpecialLookup = make(map[string][]string)
+
+func ConstructWordSpecialAppend(word string) {
+	firstChar := string(word[0])
+	WordSpecialLookup[firstChar] = append(WordSpecialLookup[firstChar], word)
+	slices.SortFunc(WordSpecialLookup[firstChar], func(a, b string) int {
+		if len(a) != len(b) {
+			return len(a) - len(b)
+		}
+		if a < b {
+			return -1
+		}
+		if a > b {
+			return 1
+		}
+		return 0
+	})
+}
 
 func ConstructWordSpecial(pogreb *pogreb.Pogreb, no *uint64) {
 	// * glob jsonl files
@@ -62,8 +80,7 @@ func ConstructWordSpecialFile(pogreb *pogreb.Pogreb, no *uint64, filePath string
 		}
 
 		// * set word special lookup
-		firstChar := string(word.Word[0])
-		wordSpecialLookup[firstChar] = append(wordSpecialLookup[firstChar], word.Word)
+		ConstructWordSpecialAppend(word.Word)
 
 		// * process the word
 		ProcessWord(pogreb, no, word.Word)

@@ -1,11 +1,11 @@
 package util
 
-func WordSpecialCheck(line string, startIndex int, lookup map[string][]string) string {
+func WordSpecialCheck(line string, startIndex int, lookup map[rune][]string) string {
 	if startIndex >= len(line) {
 		return ""
 	}
 
-	currentChar := string(line[startIndex])
+	currentChar := rune(line[startIndex])
 	possibleWords, exists := lookup[currentChar]
 	if !exists {
 		return ""

@@ -17,7 +17,7 @@ type Server interface {
 type Service struct {
 	config            *config.Config
 	pogreb            *pogreb.Pogreb
-	WordSpecialLookup map[string][]string
+	WordSpecialLookup map[rune][]string
 	WordSpecialToken  map[string]uint64
 }
 
@@ -28,7 +28,7 @@ func Serve(
 	s := &Service{
 		config:            config,
 		pogreb:            pogreb,
-		WordSpecialLookup: make(map[string][]string),
+		WordSpecialLookup: make(map[rune][]string),
 		WordSpecialToken:  make(map[string]uint64),
 	}
 
