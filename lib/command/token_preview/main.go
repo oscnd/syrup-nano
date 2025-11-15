@@ -8,6 +8,7 @@ import (
 
 	"github.com/bsthun/gut"
 	"go.scnd.dev/open/syrup/nano/lib/common/config"
+	"go.scnd.dev/open/syrup/nano/lib/common/fxo"
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/service/tokenizer"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
@@ -30,6 +31,7 @@ func main() {
 
 	// main fx application
 	fx.New(
+		fxo.Option(),
 		fx.Provide(
 			config.Init,
 			pogreb.Init,

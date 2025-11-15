@@ -2,6 +2,7 @@ package pogreb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/akrylysov/pogreb"
 	"github.com/akrylysov/pogreb/fs"
@@ -50,8 +51,23 @@ func Init(lifecycle fx.Lifecycle, config *config.Config) *Pogreb {
 			return nil
 		},
 		OnStop: func(context context.Context) error {
-			p.WordMapper.Close()
-			p.TokenMapper.Close()
+			// close word mapper
+			result, err := p.WordMapper.Compact()
+			if err != nil {
+				fmt.Printf("error word mapper compaction: %v\n", err)
+			} else {
+				fmt.Printf("word mapper compaction: %v\n", result)
+			}
+			_ = p.WordMapper.Close()
+
+			// close token mapper
+			result, err = p.TokenMapper.Compact()
+			if err != nil {
+				fmt.Printf("error token mapper compaction: %v\n", err)
+			} else {
+				fmt.Printf("token mapper compaction: %v\n", result)
+			}
+			_ = p.TokenMapper.Close()
 			return nil
 		},
 	})

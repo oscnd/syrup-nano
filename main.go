@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/config"
+	"go.scnd.dev/open/syrup/nano/lib/common/fxo"
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/service/constructor"
 	"go.scnd.dev/open/syrup/nano/lib/service/tokenizer"
@@ -27,6 +28,7 @@ func main() {}
 //export load
 func load() {
 	go fx.New(
+		fxo.Option(),
 		fx.Provide(
 			config.Init,
 			pogreb.Init,

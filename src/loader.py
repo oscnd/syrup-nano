@@ -51,7 +51,7 @@ class Loader:
                 'dataset': None  # will be loaded when needed
             })
             self.total_items += num_rows
-            print(f"added HuggingFace dataset: {dataset_name}/{split} ({num_rows} rows)")
+            print(f"added huggingface dataset: {dataset_name}/{split} ({num_rows} rows)")
         except Exception as e:
             print(f"error loading dataset {dataset_name}: {e}")
 
@@ -163,5 +163,5 @@ def create_loader():
     loader.add_huggingface("nampdn-ai/tiny-webtext", split='train', content_key='bot')
     loader.add_huggingface("nampdn-ai/tiny-textbooks", split='train', content_key='textbook')
 
-    print(f"\nTotal entries in loader: {len(loader):,}")
+    print(f"total entries in loader: {len(loader):,}")
     return loader

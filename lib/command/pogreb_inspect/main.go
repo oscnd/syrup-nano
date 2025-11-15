@@ -8,6 +8,7 @@ import (
 	pogreb2 "github.com/akrylysov/pogreb"
 	"github.com/bsthun/gut"
 	"go.scnd.dev/open/syrup/nano/lib/common/config"
+	"go.scnd.dev/open/syrup/nano/lib/common/fxo"
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/util"
 	"go.uber.org/fx"
@@ -15,6 +16,7 @@ import (
 
 func main() { // * main fx application
 	fx.New(
+		fxo.Option(),
 		fx.Provide(
 			config.Init,
 			pogreb.Init,
