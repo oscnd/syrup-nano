@@ -57,31 +57,39 @@ func main() {
 	).Run()
 }
 
-func CompactTokens(p *pogreb.Pogreb, apply bool) {
+func CompactTokens(pogreb *pogreb.Pogreb, apply bool) {
 	// Load all tokens
-	tokens := loadAllTokens(p)
+	tokens := loadAllTokens(pogreb)
 	fmt.Printf("Loaded %d tokens\n", len(tokens))
 
 	if len(tokens) <= targetWords {
 		fmt.Printf("Already at target (%d tokens)\n", len(tokens))
+		fmt.Printf("Running gap filling as cleanup optimization...\n")
+
+		// Always run gap filling as cleanup optimization, even if target is already met
+		reassignSequentialTokens(pogreb)
 		return
 	}
 
 	// Step 1: Apply character truncation
-	truncatedTokens, truncationCount := applyCharacterTruncation(tokens, p, apply)
+	truncatedTokens, truncationCount := applyCharacterTruncation(tokens, pogreb, apply)
 	fmt.Printf("Character truncation reduced %d tokens\n", truncationCount)
 
 	// Step 2: Remove long words
-	filteredTokens, longWordCount := removeLongWords(truncatedTokens, p, apply)
+	filteredTokens, longWordCount := removeLongWords(truncatedTokens, pogreb, apply)
 	fmt.Printf("Removed %d words longer than %d characters\n", longWordCount, maxWordLength)
 
 	// Step 3: Remove low-frequency words
-	finalTokens, lowFreqCount := removeLowFrequencyWords(filteredTokens, p, apply)
+	finalTokens, lowFreqCount := removeLowFrequencyWords(filteredTokens, pogreb, apply)
 	fmt.Printf("Removed %d words with count < %d\n", lowFreqCount, minWordCount)
 
 	currentWordCount := len(finalTokens)
 	if currentWordCount <= targetWords {
 		fmt.Printf("Reached target after initial cleanup (%d tokens)\n", currentWordCount)
+		fmt.Printf("Running gap filling as final cleanup step...\n")
+
+		// Always run gap filling as cleanup, even if target is already met
+		reassignSequentialTokens(pogreb)
 		return
 	}
 
@@ -90,26 +98,41 @@ func CompactTokens(p *pogreb.Pogreb, apply bool) {
 
 	// Step 5: Apply extraction steps
 	if apply {
-		applyExtractionSteps(p, finalTokens, steps)
+		if len(steps) > 0 {
+			applyExtractionSteps(pogreb, finalTokens, steps)
+		}
+
+		// Step 6: Reassign sequential token numbers to eliminate gaps (always runs as cleanup)
+		reassignSequentialTokens(pogreb)
 	} else {
-		printExtractionSteps(finalTokens, steps)
+		if len(steps) > 0 {
+			printExtractionSteps(finalTokens, steps)
+		} else {
+			fmt.Printf("\n=== NO SUBWORD EXTRACTION STEPS NEEDED ===\n")
+			fmt.Printf("Target already met or no beneficial extractions found.\n")
+		}
 	}
 }
 
-func loadAllTokens(p *pogreb.Pogreb) []string {
+func loadAllTokens(pogreb *pogreb.Pogreb) []string {
 	var tokens []string
-	it := p.WordMapper.Items()
+	it := pogreb.WordMapper.Items()
 	for {
-		key, _, err := it.Next()
+		key, value, err := it.Next()
 		if err != nil {
 			break
 		}
-		tokens = append(tokens, string(key))
+
+		// Check for special tokens
+		isSpecial, _, _ := util.MapperPayloadExtract(value)
+		if !isSpecial {
+			tokens = append(tokens, string(key))
+		}
 	}
 	return tokens
 }
 
-func applyCharacterTruncation(tokens []string, p *pogreb.Pogreb, apply bool) ([]string, int) {
+func applyCharacterTruncation(tokens []string, pogreb *pogreb.Pogreb, apply bool) ([]string, int) {
 	truncationMap := make(map[string]string)
 	var result []string
 
@@ -133,7 +156,7 @@ func applyCharacterTruncation(tokens []string, p *pogreb.Pogreb, apply bool) ([]
 	}
 
 	if apply {
-		applyTruncationToDatabase(p, truncationMap)
+		applyTruncationToDatabase(pogreb, truncationMap)
 	}
 
 	return result, len(truncationMap)
@@ -180,29 +203,39 @@ func printTruncationDryRun(truncationMap map[string]string) {
 	fmt.Printf("\n")
 }
 
-func applyTruncationToDatabase(p *pogreb.Pogreb, truncationMap map[string]string) {
+func applyTruncationToDatabase(pogreb *pogreb.Pogreb, truncationMap map[string]string) {
 	for original, truncated := range truncationMap {
-		value, err := p.WordMapper.Get([]byte(original))
+		value, err := pogreb.WordMapper.Get([]byte(original))
 		if err != nil || value == nil {
 			continue
 		}
 
 		_, tokenNo, count := util.MapperPayloadExtract(value)
-		p.WordMapper.Delete([]byte(original))
+		pogreb.WordMapper.Delete([]byte(original))
 
-		existing, _ := p.WordMapper.Get([]byte(truncated))
+		// Delete old token mapping
+		if err := pogreb.TokenMapper.Delete(util.Uint64ToBytes(tokenNo)); err != nil {
+			fmt.Printf("Warning: failed to delete token mapping %d for truncated word '%s': %v\n", tokenNo, original, err)
+		}
+
+		existing, _ := pogreb.WordMapper.Get([]byte(truncated))
 		if existing != nil {
 			_, existingTokenNo, existingCount := util.MapperPayloadExtract(existing)
 			newPayload := util.MapperPayloadBuild(false, existingTokenNo, existingCount+count)
-			p.WordMapper.Put([]byte(truncated), newPayload)
+			pogreb.WordMapper.Put([]byte(truncated), newPayload)
 		} else {
 			payload := util.MapperPayloadBuild(false, tokenNo, count)
-			p.WordMapper.Put([]byte(truncated), payload)
+			pogreb.WordMapper.Put([]byte(truncated), payload)
+
+			// Add new token mapping
+			if err := pogreb.TokenMapper.Put(util.Uint64ToBytes(tokenNo), []byte(truncated)); err != nil {
+				fmt.Printf("Warning: failed to add token mapping %d -> '%s': %v\n", tokenNo, truncated, err)
+			}
 		}
 	}
 }
 
-func removeLongWords(tokens []string, p *pogreb.Pogreb, apply bool) ([]string, int) {
+func removeLongWords(tokens []string, pogreb *pogreb.Pogreb, apply bool) ([]string, int) {
 	var filteredTokens []string
 	var longWords []string
 
@@ -221,7 +254,7 @@ func removeLongWords(tokens []string, p *pogreb.Pogreb, apply bool) ([]string, i
 	}
 
 	if apply {
-		removeLongWordsFromDatabase(p, longWords)
+		removeLongWordsFromDatabase(pogreb, longWords)
 	}
 
 	return filteredTokens, len(longWords)
@@ -243,23 +276,43 @@ func printLongWordsDryRun(longWords []string) {
 	fmt.Printf("\n")
 }
 
-func removeLongWordsFromDatabase(p *pogreb.Pogreb, longWords []string) {
+func removeLongWordsFromDatabase(pogreb *pogreb.Pogreb, longWords []string) {
 	fmt.Printf("Removing %d long words from database...\n", len(longWords))
 
 	removedCount := 0
 	for _, word := range longWords {
-		err := p.WordMapper.Delete([]byte(word))
+		// Get token number before deleting from WordMapper
+		value, err := pogreb.WordMapper.Get([]byte(word))
+		if err != nil || value == nil {
+			// Word doesn't exist, skip token deletion
+			err = pogreb.WordMapper.Delete([]byte(word))
+			if err == nil {
+				removedCount++
+			}
+			continue
+		}
+
+		_, tokenNo, _ := util.MapperPayloadExtract(value)
+
+		// Delete from WordMapper
+		err = pogreb.WordMapper.Delete([]byte(word))
 		if err != nil {
 			log.Printf("Warning: failed to delete long word '%s': %v\n", word, err)
-		} else {
-			removedCount++
+			continue
 		}
+
+		// Delete from TokenMapper
+		if delErr := pogreb.TokenMapper.Delete(util.Uint64ToBytes(tokenNo)); delErr != nil {
+			log.Printf("Warning: failed to delete token mapping %d for long word '%s': %v\n", tokenNo, word, delErr)
+		}
+
+		removedCount++
 	}
 
 	fmt.Printf("Successfully removed %d long words from database\n", removedCount)
 }
 
-func removeLowFrequencyWords(tokens []string, p *pogreb.Pogreb, apply bool) ([]string, int) {
+func removeLowFrequencyWords(tokens []string, pogreb *pogreb.Pogreb, apply bool) ([]string, int) {
 	var filteredTokens []string
 	var lowFreqWords []string
 	var lowFreqWordsWithCount []struct {
@@ -268,7 +321,7 @@ func removeLowFrequencyWords(tokens []string, p *pogreb.Pogreb, apply bool) ([]s
 	}
 
 	for _, word := range tokens {
-		value, err := p.WordMapper.Get([]byte(word))
+		value, err := pogreb.WordMapper.Get([]byte(word))
 		if err != nil || value == nil {
 			continue
 		}
@@ -292,7 +345,7 @@ func removeLowFrequencyWords(tokens []string, p *pogreb.Pogreb, apply bool) ([]s
 	}
 
 	if apply {
-		removeLowFreqWordsFromDatabase(p, lowFreqWords)
+		removeLowFreqWordsFromDatabase(pogreb, lowFreqWords)
 	}
 
 	return filteredTokens, len(lowFreqWords)
@@ -317,17 +370,37 @@ func printLowFreqWordsDryRun(lowFreqWords []struct {
 	fmt.Printf("\n")
 }
 
-func removeLowFreqWordsFromDatabase(p *pogreb.Pogreb, lowFreqWords []string) {
+func removeLowFreqWordsFromDatabase(pogreb *pogreb.Pogreb, lowFreqWords []string) {
 	fmt.Printf("Removing %d low-frequency words from database...\n", len(lowFreqWords))
 
 	removedCount := 0
 	for _, word := range lowFreqWords {
-		err := p.WordMapper.Delete([]byte(word))
+		// Get token number before deleting from WordMapper
+		value, err := pogreb.WordMapper.Get([]byte(word))
+		if err != nil || value == nil {
+			// Word doesn't exist, skip token deletion
+			err = pogreb.WordMapper.Delete([]byte(word))
+			if err == nil {
+				removedCount++
+			}
+			continue
+		}
+
+		_, tokenNo, _ := util.MapperPayloadExtract(value)
+
+		// Delete from WordMapper
+		err = pogreb.WordMapper.Delete([]byte(word))
 		if err != nil {
 			log.Printf("Warning: failed to delete low-frequency word '%s': %v\n", word, err)
-		} else {
-			removedCount++
+			continue
 		}
+
+		// Delete from TokenMapper
+		if delErr := pogreb.TokenMapper.Delete(util.Uint64ToBytes(tokenNo)); delErr != nil {
+			log.Printf("Warning: failed to delete token mapping %d for low-frequency word '%s': %v\n", tokenNo, word, delErr)
+		}
+
+		removedCount++
 	}
 
 	fmt.Printf("Successfully removed %d low-frequency words from database\n", removedCount)
@@ -642,7 +715,7 @@ func printExtractionSteps(initialTokens []string, steps []ExtractionStep) {
 	fmt.Printf("Target reached: %t\n", currentCount <= targetWords)
 }
 
-func applyExtractionSteps(p *pogreb.Pogreb, initialTokens []string, steps []ExtractionStep) {
+func applyExtractionSteps(pogreb *pogreb.Pogreb, initialTokens []string, steps []ExtractionStep) {
 	fmt.Printf("\n=== APPLYING EXTRACTION STEPS ===\n")
 
 	currentCount := len(initialTokens)
@@ -654,7 +727,7 @@ func applyExtractionSteps(p *pogreb.Pogreb, initialTokens []string, steps []Extr
 		// Apply the extraction
 		removedCount := 0
 		for _, word := range step.ParentWords {
-			err := splitWordBySubword(p, word, step.Subword)
+			err := splitWordBySubword(pogreb, word, step.Subword)
 			if err != nil {
 				log.Printf("Error splitting word '%s': %v\n", word, err)
 			} else {
@@ -679,14 +752,20 @@ func applyExtractionSteps(p *pogreb.Pogreb, initialTokens []string, steps []Extr
 	fmt.Printf("Final word count: %d\n", currentCount)
 }
 
-func splitWordBySubword(p *pogreb.Pogreb, word, subword string) error {
-	value, err := p.WordMapper.Get([]byte(word))
+func splitWordBySubword(pogreb *pogreb.Pogreb, word, subword string) error {
+	value, err := pogreb.WordMapper.Get([]byte(word))
 	if err != nil || value == nil {
 		return fmt.Errorf("word not found: %s", word)
 	}
 
 	_, tokenNo, count := util.MapperPayloadExtract(value)
-	err = p.WordMapper.Delete([]byte(word))
+
+	// Delete from TokenMapper first
+	if err := pogreb.TokenMapper.Delete(util.Uint64ToBytes(tokenNo)); err != nil {
+		return fmt.Errorf("failed to delete token mapping %d: %v", tokenNo, err)
+	}
+
+	err = pogreb.WordMapper.Delete([]byte(word))
 	if err != nil {
 		return err
 	}
@@ -700,16 +779,188 @@ func splitWordBySubword(p *pogreb.Pogreb, word, subword string) error {
 			continue
 		}
 
-		existing, _ := p.WordMapper.Get([]byte(part))
+		existing, _ := pogreb.WordMapper.Get([]byte(part))
 		if existing != nil {
 			_, existingTokenNo, existingCount := util.MapperPayloadExtract(existing)
 			newPayload := util.MapperPayloadBuild(false, existingTokenNo, existingCount+count)
-			p.WordMapper.Put([]byte(part), newPayload)
+			pogreb.WordMapper.Put([]byte(part), newPayload)
 		} else {
-			payload := util.MapperPayloadBuild(false, tokenNo+uint64(i), count)
-			p.WordMapper.Put([]byte(part), payload)
+			newTokenNo := tokenNo + uint64(i)
+			payload := util.MapperPayloadBuild(false, newTokenNo, count)
+			pogreb.WordMapper.Put([]byte(part), payload)
+
+			// Add new token mapping
+			if err := pogreb.TokenMapper.Put(util.Uint64ToBytes(newTokenNo), []byte(part)); err != nil {
+				return fmt.Errorf("failed to add token mapping %d -> %s: %v", newTokenNo, part, err)
+			}
 		}
 	}
 
 	return nil
+}
+
+func reassignSequentialTokens(pogreb *pogreb.Pogreb) {
+	fmt.Printf("\n=== REASSIGNING SEQUENTIAL TOKEN NUMBERS (GAP FILLING) ===\n")
+
+	// Collect all words with their data
+	type wordData struct {
+		word       string
+		count      uint64
+		isSpecial  bool
+		oldTokenNo uint64
+	}
+
+	var allWords []wordData
+	it := pogreb.WordMapper.Items()
+	for {
+		key, value, err := it.Next()
+		if err != nil {
+			break
+		}
+
+		word := string(key)
+		isSpecial, tokenNo, count := util.MapperPayloadExtract(value)
+		allWords = append(allWords, wordData{
+			word:       word,
+			count:      count,
+			isSpecial:  isSpecial,
+			oldTokenNo: tokenNo,
+		})
+	}
+
+	fmt.Printf("Found %d total words\n", len(allWords))
+
+	// Find the maximum existing token number
+	maxTokenNo := uint64(0)
+	for _, wd := range allWords {
+		if wd.oldTokenNo > maxTokenNo {
+			maxTokenNo = wd.oldTokenNo
+		}
+	}
+
+	// Create a map of existing token numbers to identify gaps
+	existingTokens := make(map[uint64]bool)
+	for _, wd := range allWords {
+		existingTokens[wd.oldTokenNo] = true
+	}
+
+	// Create a map of existing token numbers to identify gaps (exclude special tokens)
+	existingRegularTokens := make(map[uint64]bool)
+	for _, wd := range allWords {
+		if !wd.isSpecial {
+			existingRegularTokens[wd.oldTokenNo] = true
+		}
+	}
+
+	// Find all gaps in the token sequence (considering only regular tokens)
+	var gaps []uint64
+	for i := uint64(1); i <= maxTokenNo; i++ {
+		if !existingRegularTokens[i] {
+			gaps = append(gaps, i)
+		}
+	}
+
+	fmt.Printf("Found %d gaps in regular token sequence from 1 to %d\n", len(gaps), maxTokenNo)
+	if len(gaps) > 0 {
+		fmt.Printf("Gap positions: %v\n", gaps)
+	}
+
+	// Filter out special words - only work with regular words
+	var regularWords []wordData
+	for _, wd := range allWords {
+		if !wd.isSpecial {
+			regularWords = append(regularWords, wd)
+		}
+	}
+
+	// Count special and regular words
+	specialCount := len(allWords) - len(regularWords)
+	regularCount := len(regularWords)
+
+	fmt.Printf("Special tokens: %d (excluded from gap filling)\n", specialCount)
+	fmt.Printf("Regular tokens: %d (candidates for gap filling)\n", regularCount)
+
+	// Sort regular words by current token number (highest first) for gap filling
+	sort.Slice(regularWords, func(i, j int) bool {
+		return regularWords[i].oldTokenNo > regularWords[j].oldTokenNo
+	})
+
+	// Fill gaps one by one starting from the highest token numbers (only regular words)
+	updatedCount := 0
+	gapIndex := 0
+
+	for _, wd := range regularWords {
+		if gapIndex >= len(gaps) {
+			break // No more gaps to fill
+		}
+
+		gapTokenNo := gaps[gapIndex]
+
+		// Only move if the current token number is higher than the gap
+		if wd.oldTokenNo <= gapTokenNo {
+			continue
+		}
+
+		// Move word from old token to gap position
+		// Update WordMapper
+		value, err := pogreb.WordMapper.Get([]byte(wd.word))
+		if err != nil || value == nil {
+			continue
+		}
+
+		isSpecial, _, count := util.MapperPayloadExtract(value)
+		newPayload := util.MapperPayloadBuild(isSpecial, gapTokenNo, count)
+
+		if err := pogreb.WordMapper.Put([]byte(wd.word), newPayload); err != nil {
+			fmt.Printf("Error updating word %s: %v\n", wd.word, err)
+			continue
+		}
+
+		// Update TokenMapper - delete old mapping, add new mapping
+		if err := pogreb.TokenMapper.Delete(util.Uint64ToBytes(wd.oldTokenNo)); err != nil {
+			fmt.Printf("Warning: failed to delete old token mapping %d: %v\n", wd.oldTokenNo, err)
+		}
+
+		if err := pogreb.TokenMapper.Put(util.Uint64ToBytes(gapTokenNo), []byte(wd.word)); err != nil {
+			fmt.Printf("Error updating token mapping %d -> %s: %v\n", gapTokenNo, wd.word, err)
+			continue
+		}
+
+		fmt.Printf("Moved regular word '%s' from token %d to gap %d\n", wd.word, wd.oldTokenNo, gapTokenNo)
+
+		// The old position becomes a new gap for future iterations
+		gaps[gapIndex] = wd.oldTokenNo
+
+		// Sort gaps again to maintain order for next iteration
+		sort.Slice(gaps, func(i, j int) bool {
+			return gaps[i] < gaps[j]
+		})
+
+		updatedCount++
+	}
+
+	// Sort gaps one final time to show remaining gaps
+	sort.Slice(gaps, func(i, j int) bool {
+		return gaps[i] < gaps[j]
+	})
+
+	fmt.Printf("Gap filling complete:\n")
+	fmt.Printf("- Moved %d regular words to fill gaps\n", updatedCount)
+	fmt.Printf("- Special tokens: %d (unchanged)\n", specialCount)
+	fmt.Printf("- Regular tokens: %d (participated)\n", regularCount)
+
+	remainingGaps := 0
+	for _, gap := range gaps {
+		if gap <= maxTokenNo {
+			remainingGaps++
+		}
+	}
+
+	if remainingGaps > 0 {
+		fmt.Printf("- Remaining gaps: %d\n", remainingGaps)
+	} else {
+		fmt.Printf("- All gaps filled successfully!\n")
+	}
+
+	fmt.Printf("Token reassignment complete.\n")
 }
