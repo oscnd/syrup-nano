@@ -1,13 +1,13 @@
-{"word": "make"}
-{"word": "len"}
-{"word": "cap"}
-{"word": "new"}
-{"word": "append"}
-{"word": "copy"}
-{"word": "close"}
-{"word": "delete"}
-{"word": "complex"}
-{"word": "real"}
-{"word": "imag"}
-{"word": "panic"}
-{"word": "recover"}
+{"compound": "make","words": ["make"]}
+{"compound": "len","words": ["len"]}
+{"compound": "cap","words": ["cap"]}
+{"compound": "new","words": ["new"]}
+{"compound": "append","words": ["append"]}
+{"compound": "copy","words": ["copy"]}
+{"compound": "close","words": ["close"]}
+{"compound": "delete","words": ["delete"]}
+{"compound": "complex","words": ["complex"]}
+{"compound": "real","words": ["real"]}
+{"compound": "imag","words": ["imag"]}
+{"compound": "panic","words": ["panic"]}
+{"compound": "recover","words": ["recover"]}

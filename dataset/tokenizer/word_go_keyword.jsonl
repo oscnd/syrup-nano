@@ -1,25 +1,25 @@
-{"word": "break"}
-{"word": "case"}
-{"word": "chan"}
-{"word": "const"}
-{"word": "continue"}
-{"word": "default"}
-{"word": "defer"}
-{"word": "else"}
-{"word": "fallthrough"}
-{"word": "for"}
-{"word": "func"}
-{"word": "go"}
-{"word": "goto"}
-{"word": "if"}
-{"word": "import"}
-{"word": "interface"}
-{"word": "map"}
-{"word": "package"}
-{"word": "range"}
-{"word": "return"}
-{"word": "select"}
-{"word": "struct"}
-{"word": "switch"}
-{"word": "type"}
-{"word": "var"}
+{"compound": "break","words": ["break"]}
+{"compound": "case","words": ["case"]}
+{"compound": "chan","words": ["chan"]}
+{"compound": "const","words": ["const"]}
+{"compound": "continue","words": ["continue"]}
+{"compound": "default","words": ["default"]}
+{"compound": "defer","words": ["defer"]}
+{"compound": "else","words": ["else"]}
+{"compound": "fallthrough","words": ["fallthrough"]}
+{"compound": "for","words": ["for"]}
+{"compound": "func","words": ["func"]}
+{"compound": "go","words": ["go"]}
+{"compound": "goto","words": ["goto"]}
+{"compound": "if","words": ["if"]}
+{"compound": "import","words": ["import"]}
+{"compound": "interface","words": ["interface"]}
+{"compound": "map","words": ["map"]}
+{"compound": "package","words": ["package"]}
+{"compound": "range","words": ["range"]}
+{"compound": "return","words": ["return"]}
+{"compound": "select","words": ["select"]}
+{"compound": "struct","words": ["struct"]}
+{"compound": "switch","words": ["switch"]}
+{"compound": "type","words": ["type"]}
+{"compound": "var","words": ["var"]}

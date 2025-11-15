@@ -1,55 +1,55 @@
-{"word": "\n"}
-{"word": "\t"}
-{"word": "\\"}
-{"word": "\""}
-{"word": "'"}
-{"word": " "}
-{"word": "_"}
-{"word": "("}
-{"word": ")"}
-{"word": "{"}
-{"word": "}"}
-{"word": "["}
-{"word": "]"}
-{"word": "//"}
-{"word": "// "}
-{"word": "// * "}
-{"word": "/*"}
-{"word": "*/"}
-{"word": "="}
-{"word": ":="}
-{"word": "."}
-{"word": ","}
-{"word": ";"}
-{"word": ":"}
-{"word": "..."}
-{"word": "+"}
-{"word": "-"}
-{"word": "*"}
-{"word": "/"}
-{"word": "%"}
-{"word": "!"}
-{"word": "&&"}
-{"word": "||"}
-{"word": "=="}
-{"word": "!="}
-{"word": "<"}
-{"word": "<="}
-{"word": ">"}
-{"word": ">="}
-{"word": "++"}
-{"word": "--"}
-{"word": "&"}
-{"word": "|"}
-{"word": "^"}
-{"word": "<<"}
-{"word": ">>"}
-{"word": "~"}
-{"word": "`"}
-{"word": "```"}
-{"word": "<-"}
-{"word": "->"}
-{"word": "$"}
-{"word": "?"}
-{"word": "@"}
-{"word": "#"}
+{"compound": "\n","words": ["\n"]}
+{"compound": "\t","words": ["\t"]}
+{"compound": "\\","words": ["\\"]}
+{"compound": "\"","words": ["\""]}
+{"compound": "'","words": ["'"]}
+{"compound": " ","words": [" "]}
+{"compound": "_","words": ["_"]}
+{"compound": "(","words": ["("]}
+{"compound": ")","words": [")"]}
+{"compound": "{","words": ["{"]}
+{"compound": "}","words": ["}"]}
+{"compound": "[","words": ["["]}
+{"compound": "]","words": ["]"]}
+{"compound": "//","words": ["//"]}
+{"compound": "// ","words": ["// "]}
+{"compound": "// * ","words": ["// * "]}
+{"compound": "/*","words": ["/*"]}
+{"compound": "*/","words": ["*/"]}
+{"compound": "=","words": ["="]}
+{"compound": ":=","words": [":="]}
+{"compound": ".","words": ["."]}
+{"compound": ",","words": [","]}
+{"compound": ";","words": [";"]}
+{"compound": ":","words": [":"]}
+{"compound": "...","words": ["..."]}
+{"compound": "+","words": ["+"]}
+{"compound": "-","words": ["-"]}
+{"compound": "*","words": ["*"]}
+{"compound": "/","words": ["/"]}
+{"compound": "%","words": ["%"]}
+{"compound": "!","words": ["!"]}
+{"compound": "&&","words": ["&&"]}
+{"compound": "||","words": ["||"]}
+{"compound": "==","words": ["=="]}
+{"compound": "!=","words": ["!="]}
+{"compound": "<","words": ["<"]}
+{"compound": "<=","words": ["<="]}
+{"compound": ">","words": [">"]}
+{"compound": ">=","words": [">="]}
+{"compound": "++","words": ["++"]}
+{"compound": "--","words": ["--"]}
+{"compound": "&","words": ["&"]}
+{"compound": "|","words": ["|"]}
+{"compound": "^","words": ["^"]}
+{"compound": "<<","words": ["<<"]}
+{"compound": ">>","words": [">>"]}
+{"compound": "~","words": ["~"]}
+{"compound": "`","words": ["`"]}
+{"compound": "```","words": ["```"]}
+{"compound": "<-","words": ["<-"]}
+{"compound": "->","words": ["->"]}
+{"compound": "$","words": ["$"]}
+{"compound": "?","words": ["?"]}
+{"compound": "@","words": ["@"]}
+{"compound": "#","words": ["#"]}
