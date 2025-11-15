@@ -10,9 +10,9 @@ import (
 func (r *Service) ProcessWord(word string) {
 	// * generalize word
 	special := false
-	if possibleWords, ok := r.WordSpecialLookup[rune(word[0])]; ok {
-		for _, possibleWord := range possibleWords {
-			if word == possibleWord {
+	if possibleSpecialWords, ok := r.WordSpecialLookup[rune(word[0])]; ok {
+		for _, possibleSpecial := range possibleSpecialWords {
+			if word == possibleSpecial.Text {
 				special = true
 			}
 		}

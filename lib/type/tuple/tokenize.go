@@ -9,9 +9,9 @@ type WordPair struct {
 	Token uint64 `json:"token"`
 }
 
-type CompoundWord struct {
-	Compound string   `json:"compound"`
-	Words    []string `json:"words"`
+type SpecialWord struct {
+	Text  string   `json:"text"`
+	Words []string `json:"words"`
 }
 
 type Code struct {

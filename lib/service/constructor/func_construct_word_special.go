@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 
-	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
@@ -18,18 +17,6 @@ func (r *Service) ConstructWordSpecial(pattern string) {
 	if err != nil {
 		fmt.Printf("glob error: %v\n", err)
 		return
-	}
-
-	// * process word modifier
-	for key := range enum.WordModifier {
-		r.ProcessWord(string(key))
-		enum.WordModifier[key] = r.no
-	}
-
-	// * process word suffix
-	for key := range enum.WordSuffix {
-		r.ProcessWord(string(key))
-		enum.WordSuffix[key].TokenNo = r.no
 	}
 
 	// * process word special
@@ -52,17 +39,19 @@ func (r *Service) ConstructWordSpecialFile(filePath string) {
 	for scanner.Scan() {
 		line := scanner.Bytes()
 
-		word := new(tuple.Word)
-		if err := json.Unmarshal(line, word); err != nil {
+		special := new(tuple.SpecialWord)
+		if err := json.Unmarshal(line, special); err != nil {
 			fmt.Printf("error unmarshaling line in file %s: %v\n", filePath, err)
 			continue
 		}
 
 		// * set word special lookup
-		r.ConstructWordSpecialAppend(word.Word)
+		r.ConstructWordSpecialAppend(special.Text, special.Words)
 
-		// * process the word
-		r.ProcessWord(word.Word)
+		// * process subwords
+		for _, word := range special.Words {
+			r.ProcessWord(word)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -70,17 +59,20 @@ func (r *Service) ConstructWordSpecialFile(filePath string) {
 	}
 }
 
-func (r *Service) ConstructWordSpecialAppend(word string) {
-	firstChar := rune(word[0])
-	r.WordSpecialLookup[firstChar] = append(r.WordSpecialLookup[firstChar], word)
-	slices.SortFunc(r.WordSpecialLookup[firstChar], func(a, b string) int {
-		if len(a) != len(b) {
-			return len(a) - len(b)
+func (r *Service) ConstructWordSpecialAppend(text string, words []string) {
+	firstChar := rune(text[0])
+	r.WordSpecialLookup[firstChar] = append(r.WordSpecialLookup[firstChar], &tuple.SpecialWord{
+		Text:  text,
+		Words: words,
+	})
+	slices.SortFunc(r.WordSpecialLookup[firstChar], func(a, b *tuple.SpecialWord) int {
+		if len(a.Text) != len(b.Text) {
+			return len(a.Text) - len(b.Text)
 		}
-		if a < b {
+		if a.Text < b.Text {
 			return -1
 		}
-		if a > b {
+		if a.Text > b.Text {
 			return 1
 		}
 		return 0

@@ -1,7 +1,6 @@
 package tokenizer
 
 import (
-	"fmt"
 	"strings"
 	"unicode"
 
@@ -16,9 +15,9 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 	i := 0
 
 	for i < len(line) {
-		// check for compound word first using WordRootCheck utility
-		compoundWord := util.WordRootCheck(line, i, r.WordRootLookup)
-		if compoundWord != nil {
+		// check for special word using WordSpecialCheck utility
+		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
+		if specialWord != nil {
 			// case of accumulated characters before, add them as a word
 			if len(current) > 0 {
 				wordPair := r.ProcessWord(string(current))
@@ -26,35 +25,12 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 				current = current[:0] // clear accumulated characters
 			}
 
-			// process each subword in the compound word
-			for _, subword := range compoundWord.Words {
+			// process each subword in the special word
+			for _, subword := range specialWord.Words {
 				wordPair := r.ProcessWord(subword)
 				pairs = append(pairs, wordPair...)
 			}
-			i += len(compoundWord.Compound)
-			continue
-		}
-
-		// check for special word
-		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
-		if specialWord != "" {
-			// case of accumulated characters before, add them as a word
-			if len(current) > 0 {
-				wordPair := r.ProcessWord(string(current))
-				pairs = append(pairs, wordPair...)
-				current = current[:0] // clear accumulated characters
-			}
-
-			// add special word
-			tokenNo, exists := r.WordSpecialToken[specialWord]
-			if !exists {
-				fmt.Printf("special word token not found for word: %s\n", specialWord)
-			}
-			pairs = append(pairs, &tuple.WordPair{
-				Word:  specialWord,
-				Token: tokenNo,
-			})
-			i += len(specialWord)
+			i += len(specialWord.Text)
 			continue
 		}
 
@@ -71,14 +47,8 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 			consecutiveUpper := false
 			var j int
 			for j = i + 1; j < len(line); j++ {
-				// break on compound word check
-				if util.WordRootCheck(line, j, r.WordRootLookup) != nil {
-					consecutiveUpper = true
-					break
-				}
-
-				// break on special word check
-				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != "" {
+				// break on word special check
+				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != nil {
 					consecutiveUpper = true
 					break
 				}

@@ -17,9 +17,8 @@ type Server interface {
 type Service struct {
 	config            *config.Config
 	pogreb            *pogreb.Pogreb
-	WordSpecialLookup map[rune][]string
+	WordSpecialLookup map[rune][]*tuple.SpecialWord
 	WordSpecialToken  map[string]uint64
-	WordRootLookup    map[rune][]*tuple.CompoundWord
 }
 
 func Serve(
@@ -29,9 +28,8 @@ func Serve(
 	s := &Service{
 		config:            config,
 		pogreb:            pogreb,
-		WordSpecialLookup: make(map[rune][]string),
+		WordSpecialLookup: make(map[rune][]*tuple.SpecialWord),
 		WordSpecialToken:  make(map[string]uint64),
-		WordRootLookup:    make(map[rune][]*tuple.CompoundWord),
 	}
 
 	s.LoadWordModifier()

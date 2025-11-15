@@ -15,17 +15,17 @@ func (r *Service) ProcessLine(line string) []any {
 	i := 0
 
 	for i < len(line) {
-		// check for compound word first using WordRootCheck utility
-		compoundWord := util.WordRootCheck(line, i, r.WordRootLookup)
-		if compoundWord != nil {
+		// check for special word using WordSpecialCheck utility
+		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
+		if specialWord != nil {
 			// case of accumulated characters before, add them as a word
 			if len(current) > 0 {
 				values = append(values, string(current))
 				current = current[:0] // clear accumulated characters
 			}
 
-			// process each subword in the compound word
-			for _, subword := range compoundWord.Words {
+			// process each subword in the special word
+			for _, subword := range specialWord.Words {
 				value, err := r.pogreb.WordMapper.Get([]byte(subword))
 				if err != nil || value == nil {
 					fmt.Printf("error retrieving subword token %s: %v\n", subword, err)
@@ -33,27 +33,7 @@ func (r *Service) ProcessLine(line string) []any {
 				_, tokenNo, _ := util.MapperPayloadExtract(value)
 				values = append(values, tokenNo)
 			}
-			i += len(compoundWord.Compound)
-			continue
-		}
-
-		// check for special word using WordSpecialCheck utility
-		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
-		if specialWord != "" {
-			// case of accumulated characters before, add them as a word
-			if len(current) > 0 {
-				values = append(values, string(current))
-				current = current[:0] // clear accumulated characters
-			}
-
-			// found a matching special token
-			value, err := r.pogreb.WordMapper.Get([]byte(specialWord))
-			if err != nil || value == nil {
-				fmt.Printf("error retrieving special token %s: %v\n", specialWord, err)
-			}
-			_, tokenNo, _ := util.MapperPayloadExtract(value)
-			values = append(values, tokenNo)
-			i += len(specialWord)
+			i += len(specialWord.Text)
 			continue
 		}
 
@@ -69,14 +49,8 @@ func (r *Service) ProcessLine(line string) []any {
 			consecutiveUpper := false
 			var j int
 			for j = i; j < len(line); j++ {
-				// break on compound word check
-				if util.WordRootCheck(line, j, r.WordRootLookup) != nil {
-					consecutiveUpper = true
-					break
-				}
-
-				// break on special word check
-				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != "" {
+				// break on word special check
+				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != nil {
 					consecutiveUpper = true
 					break
 				}
