@@ -222,7 +222,7 @@ meta_path = os.path.join(out_dir, 'meta.pkl')
 with open(meta_path, 'rb') as f:
     meta = pickle.load(f)
 meta_vocab_size = meta['vocab_size']
-print(f"found vocab_size = {meta_vocab_size} (inside {meta_path})")
+print(f"found vocab_size {meta_vocab_size} (inside {meta_path})")
 
 # model init
 model_args = dict(n_layer=n_layer, n_head=n_head, n_embd=n_embd, block_size=block_size,

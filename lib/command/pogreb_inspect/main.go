@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	pogreb2 "github.com/akrylysov/pogreb"
-	"github.com/bsthun/gut"
 	"go.scnd.dev/open/syrup/nano/lib/common/config"
 	"go.scnd.dev/open/syrup/nano/lib/common/fxo"
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
@@ -30,6 +29,7 @@ func main() { // * main fx application
 func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb) {
 	it := pogreb.WordMapper.Items()
 	keys := make([]string, 0)
+	max := uint64(0)
 	for {
 		key, val, err := it.Next()
 		if errors.Is(err, pogreb2.ErrIterationDone) {
@@ -38,8 +38,12 @@ func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("%11d %s %11d %s\n", util.BytesToUint64(val[8:16]), gut.Base62(util.BytesToUint64(val[8:16])), util.BytesToUint64(val[16:24]), string(key))
+		_, no, count := util.MapperPayloadExtract(val)
+		log.Printf("%11d %s %11d %s\n", no, string(key), count, key)
 		keys = append(keys, string(key))
+		if no > max {
+			max = no
+		}
 	}
 
 	slices.Sort(keys)
@@ -47,6 +51,8 @@ func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb) {
 	for _, key := range keys {
 		log.Println(key)
 	}
+
+	log.Println("max:", max)
 
 	_ = shutdowner.Shutdown()
 }
