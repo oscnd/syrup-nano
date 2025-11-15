@@ -15,6 +15,13 @@ func (r *Service) ProcessLine(line string) []any {
 	i := 0
 
 	for i < len(line) {
+		// remove consecutive identical characters
+		if i >= 2 && line[i] == line[i-1] && line[i] == line[i-2] {
+			current = current[:0]
+			i++
+			continue
+		}
+
 		// check for special word using WordSpecialCheck utility
 		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
 		if specialWord != nil {
@@ -82,7 +89,7 @@ func (r *Service) ProcessLine(line string) []any {
 	}
 
 	// add any remaining characters as a word
-	if len(current) > 0 {
+	if len(current) > 2 && (current[0] != current[1] || current[1] != current[2]) {
 		values = append(values, string(current))
 	}
 

@@ -75,7 +75,9 @@ func (r *Service) ConstructContent(filename string, content string) {
 			}
 
 			if matched, _ := regexp.MatchString("^[a-z]+$", word); !matched {
-				fmt.Printf("invalid word '%s' extracted from %s:%d\n", word, filename, contentLineNo)
+				if false {
+					fmt.Printf("invalid word '%s' extracted from %s:%d\n", word, filename, contentLineNo)
+				}
 				goto next
 			}
 		}

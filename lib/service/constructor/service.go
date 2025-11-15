@@ -1,6 +1,9 @@
 package constructor
 
 import (
+	"time"
+
+	"github.com/bsthun/gut"
 	"go.scnd.dev/open/syrup/nano/lib/common/config"
 	"go.scnd.dev/open/syrup/nano/lib/common/pogreb"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
@@ -18,7 +21,8 @@ type Service struct {
 	config            *config.Config
 	pogreb            *pogreb.Pogreb
 	WordSpecialLookup map[rune][]*tuple.SpecialWord
-	no                uint64
+	No                uint64
+	LastLogged        *time.Time
 }
 
 func Serve(
@@ -29,7 +33,8 @@ func Serve(
 		config:            config,
 		pogreb:            pogreb,
 		WordSpecialLookup: make(map[rune][]*tuple.SpecialWord),
-		no:                0,
+		No:                0,
+		LastLogged:        gut.Ptr(time.Now()),
 	}
 
 	// * resume token number initialization

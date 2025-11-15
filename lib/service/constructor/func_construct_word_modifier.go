@@ -6,12 +6,12 @@ func (r *Service) ConstructWordModifier() {
 	// * process word modifier
 	for key := range enum.WordModifier {
 		r.ProcessWord(string(key))
-		enum.WordModifier[key] = r.no
+		enum.WordModifier[key] = r.No
 	}
 
 	// * process word suffix
 	for key := range enum.WordSuffix {
 		r.ProcessWord(string(key))
-		enum.WordSuffix[key].TokenNo = r.no
+		enum.WordSuffix[key].TokenNo = r.No
 	}
 }

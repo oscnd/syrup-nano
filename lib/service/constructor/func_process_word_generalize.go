@@ -5,15 +5,19 @@ import (
 )
 
 func (r *Service) ProcessWordGeneralize(word string) (string, enum.WordSuffixType) {
-	if len(word) < 4 {
-		return word, ""
-	}
-
 	// Iterate through suffix mappings to find matches
-	for suffixKey, suffixBlock := range enum.WordSuffix {
-		if suffixBlock.Check(word) {
-			return suffixBlock.BaseWord(word), suffixKey
+	for {
+		block := new(enum.WordSuffixBlock)
+		for _, suffixBlock := range enum.WordSuffix {
+			if suffixBlock.Check(word) {
+				block = suffixBlock
+				break
+			}
 		}
+		if block.Suffix == "" {
+			return word, ""
+		}
+		word = block.BaseWord(word)
 	}
 
 	return word, ""

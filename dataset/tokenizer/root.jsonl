@@ -1,3 +1,6 @@
+{"text": "an", "words": ["an"]}
+{"text": "acro", "words": ["acro"]}
+{"text": "act", "words": ["act"]}
 {"text": "aer", "words": ["aer"]}
 {"text": "aero", "words": ["aer", "o"]}
 {"text": "agr", "words": ["agr"]}
@@ -5,18 +8,28 @@
 {"text": "agro", "words": ["agr", "o"]}
 {"text": "alg", "words": ["alg"]}
 {"text": "algo", "words": ["alg", "o"]}
+{"text": "ambi", "words": ["ambi"]}
+{"text": "amphi", "words": ["amphi"]}
+{"text": "ambul", "words": ["ambul"]}
 {"text": "ami", "words": ["ami"]}
 {"text": "amio", "words": ["ami", "o"]}
+{"text": "ana", "words": ["ana"]}
 {"text": "andr", "words": ["andr"]}
 {"text": "andro", "words": ["andr", "o"]}
+{"text": "anim", "words": ["anim"]}
 {"text": "ann", "words": ["ann"]}
 {"text": "annenn", "words": ["ann", "enn"]}
+{"text": "ante", "words": ["ante"]}
 {"text": "anth", "words": ["anth"]}
 {"text": "antho", "words": ["anth", "o"]}
 {"text": "anthrop", "words": ["anthrop"]}
 {"text": "anthropo", "words": ["anthrop", "o"]}
+{"text": "anti", "words": ["anti"]}
+{"text": "apo", "words": ["apo"]}
+{"text": "apho", "words": ["apho"]}
 {"text": "aqu", "words": ["aqu"]}
 {"text": "aqua", "words": ["aqu", "a"]}
+{"text": "arbor", "words": ["arbor"]}
 {"text": "arch", "words": ["arch"]}
 {"text": "archi", "words": ["arch", "i"]}
 {"text": "arch", "words": ["arch"]}
@@ -24,25 +37,44 @@
 {"text": "archi", "words": ["arch", "i"]}
 {"text": "arthr", "words": ["arthr"]}
 {"text": "arthro", "words": ["arthr", "o"]}
+{"text": "art", "words": ["art"]}
+{"text": "astro", "words": ["astro"]}
+{"text": "aster", "words": ["aster"]}
 {"text": "aud", "words": ["aud"]}
 {"text": "audi", "words": ["aud", "i"]}
 {"text": "audio", "words": ["aud", "io"]}
+{"text": "auto", "words": ["auto"]}
 {"text": "avi", "words": ["avi"]}
 {"text": "avia", "words": ["avi", "a"]}
 {"text": "bar", "words": ["bar"]}
 {"text": "baro", "words": ["bar", "o"]}
 {"text": "bell", "words": ["bell"]}
 {"text": "belli", "words": ["bell", "i"]}
+{"text": "bene", "words": ["bene"]}
 {"text": "bi", "words": ["bi"]}
 {"text": "bin", "words": ["bi", "n"]}
 {"text": "bibli", "words": ["bibli"]}
 {"text": "biblio", "words": ["bibli", "o"]}
+{"text": "bio", "words": ["bio"]}
 {"text": "blast", "words": ["blast"]}
 {"text": "blasto", "words": ["blast", "o"]}
+{"text": "burs", "words": ["burs"]}
+{"text": "calc", "words": ["calc"]}
+{"text": "cand", "words": ["cand"]}
+{"text": "capt", "words": ["capt"]}
+{"text": "cept", "words": ["cept"]}
+{"text": "ceive", "words": ["ceive"]}
 {"text": "cardi", "words": ["cardi"]}
 {"text": "cardio", "words": ["cardi", "o"]}
 {"text": "carn", "words": ["carn"]}
 {"text": "carni", "words": ["carn", "i"]}
+{"text": "cata", "words": ["cata"]}
+{"text": "caust", "words": ["caust"]}
+{"text": "caut", "words": ["caut"]}
+{"text": "cede", "words": ["cede"]}
+{"text": "ceed", "words": ["ceed"]}
+{"text": "cess", "words": ["cess"]}
+{"text": "celer", "words": ["celer"]}
 {"text": "cent", "words": ["cent"]}
 {"text": "centi", "words": ["cent", "i"]}
 {"text": "centr", "words": ["centr"]}
@@ -52,46 +84,89 @@
 {"text": "cephalo", "words": ["cephal", "o"]}
 {"text": "cerebr", "words": ["cerebr"]}
 {"text": "cerebro", "words": ["cerebr", "o"]}
+{"text": "cert", "words": ["cert"]}
 {"text": "chrom", "words": ["chrom"]}
 {"text": "chromo", "words": ["chrom", "o"]}
 {"text": "chromat", "words": ["chromat"]}
 {"text": "chromato", "words": ["chromat", "o"]}
+{"text": "chros", "words": ["chros"]}
 {"text": "chron", "words": ["chron"]}
 {"text": "chrono", "words": ["chron", "o"]}
 {"text": "chrys", "words": ["chrys"]}
 {"text": "chryso", "words": ["chrys", "o"]}
+{"text": "cide", "words": ["cide"]}
+{"text": "cise", "words": ["cise"]}
+{"text": "circum", "words": ["circum"]}
+{"text": "circle", "words": ["circle"]}
+{"text": "claim", "words": ["claim"]}
+{"text": "clam", "words": ["clam"]}
+{"text": "clar", "words": ["clar"]}
+{"text": "clud", "words": ["clud"]}
+{"text": "clus", "words": ["clus"]}
+{"text": "cline", "words": ["cline"]}
+{"text": "co", "words": ["co"]}
+{"text": "col", "words": ["col"]}
+{"text": "com", "words": ["com"]}
 {"text": "cogn", "words": ["cogn"]}
 {"text": "cogni", "words": ["cogn", "i"]}
+{"text": "con", "words": ["con"]}
 {"text": "contra", "words": ["contra"]}
 {"text": "contrao", "words": ["contra", "o"]}
 {"text": "corp", "words": ["corp"]}
 {"text": "corpo", "words": ["corp", "o"]}
 {"text": "cosm", "words": ["cosm"]}
 {"text": "cosmo", "words": ["cosm", "o"]}
+{"text": "counter", "words": ["counter"]}
+{"text": "cranio", "words": ["cranio"]}
+{"text": "cred", "words": ["cred"]}
+{"text": "cruc", "words": ["cruc"]}
+{"text": "crypto", "words": ["crypto"]}
+{"text": "cumul", "words": ["cumul"]}
+{"text": "curr", "words": ["curr"]}
+{"text": "curs", "words": ["curs"]}
+{"text": "cycl", "words": ["cycl"]}
+{"text": "de", "words": ["de"]}
 {"text": "dec", "words": ["dec"]}
 {"text": "deca", "words": ["dec", "a"]}
+{"text": "deka", "words": ["deka"]}
+{"text": "deci", "words": ["deci"]}
 {"text": "dem", "words": ["dem"]}
 {"text": "demo", "words": ["dem", "o"]}
+{"text": "demi", "words": ["demi"]}
 {"text": "dendr", "words": ["dendr"]}
 {"text": "dendro", "words": ["dendr", "o"]}
 {"text": "dendri", "words": ["dendr", "i"]}
+{"text": "dent", "words": ["dent"]}
+{"text": "dont", "words": ["dont"]}
 {"text": "derm", "words": ["derm"]}
 {"text": "derma", "words": ["derm", "a"]}
 {"text": "di", "words": ["di"]}
 {"text": "diplo", "words": ["di", "plo"]}
 {"text": "di", "words": ["di"]}
 {"text": "dis", "words": ["di", "s"]}
+{"text": "dia", "words": ["dia"]}
+{"text": "dict", "words": ["dict"]}
+{"text": "domin", "words": ["domin"]}
 {"text": "don", "words": ["don"]}
 {"text": "donat", "words": ["don", "at"]}
 {"text": "duc", "words": ["duc"]}
 {"text": "duct", "words": ["duc", "t"]}
 {"text": "du", "words": ["du"]}
 {"text": "duo", "words": ["du", "o"]}
+{"text": "dur", "words": ["dur"]}
 {"text": "dyn", "words": ["dyn"]}
 {"text": "dyna", "words": ["dyn", "a"]}
 {"text": "dynam", "words": ["dyn", "am"]}
+{"text": "dys", "words": ["dys"]}
+{"text": "ego", "words": ["ego"]}
+{"text": "em", "words": ["em"]}
+{"text": "en", "words": ["en"]}
+{"text": "endo", "words": ["endo"]}
 {"text": "enn", "words": ["enn"]}
 {"text": "enni", "words": ["enn", "i"]}
+{"text": "anni", "words": ["anni"]}
+{"text": "en", "words": ["en"]}
+{"text": "in", "words": ["in"]}
 {"text": "ep", "words": ["ep"]}
 {"text": "epi", "words": ["ep", "i"]}
 {"text": "equ", "words": ["equ"]}
@@ -100,66 +175,132 @@
 {"text": "ergo", "words": ["erg", "o"]}
 {"text": "esth", "words": ["esth"]}
 {"text": "esthaesth", "words": ["esth", "aesth"]}
+{"text": "ethno", "words": ["ethno"]}
+{"text": "eu", "words": ["eu"]}
+{"text": "ex", "words": ["ex"]}
+{"text": "extra", "words": ["extra"]}
+{"text": "extro", "words": ["extro"]}
 {"text": "fac", "words": ["fac"]}
 {"text": "fact", "words": ["fac", "t"]}
+{"text": "fer", "words": ["fer"]}
+{"text": "fid", "words": ["fid"]}
+{"text": "flect", "words": ["flect"]}
 {"text": "flor", "words": ["flor"]}
 {"text": "flora", "words": ["flor", "a"]}
+{"text": "fleur", "words": ["fleur"]}
+{"text": "for", "words": ["for"]}
+{"text": "fore", "words": ["fore"]}
+{"text": "form", "words": ["form"]}
+{"text": "fract", "words": ["fract"]}
+{"text": "frag", "words": ["frag"]}
+{"text": "fug", "words": ["fug"]}
+{"text": "funct", "words": ["funct"]}
+{"text": "fus", "words": ["fus"]}
 {"text": "gastr", "words": ["gastr"]}
 {"text": "gastro", "words": ["gastr", "o"]}
 {"text": "gen", "words": ["gen"]}
 {"text": "geno", "words": ["gen", "o"]}
 {"text": "gene", "words": ["gene"]}
 {"text": "genesisgeo", "words": ["gene", "sisgeo"]}
+{"text": "ger", "words": ["ger"]}
+{"text": "giga", "words": ["giga"]}
+{"text": "gon", "words": ["gon"]}
+{"text": "gram", "words": ["gram"]}
+{"text": "gran", "words": ["gran"]}
 {"text": "graph", "words": ["graph"]}
 {"text": "graphy", "words": ["graph", "y"]}
+{"text": "grat", "words": ["grat"]}
 {"text": "gyn", "words": ["gyn"]}
 {"text": "gyno", "words": ["gyn", "o"]}
 {"text": "gyne", "words": ["gyn", "e"]}
+{"text": "gress", "words": ["gress"]}
 {"text": "grad", "words": ["grad"]}
 {"text": "grade", "words": ["grad", "e"]}
 {"text": "gradi", "words": ["grad", "i"]}
 {"text": "hect", "words": ["hect"]}
 {"text": "hecto", "words": ["hect", "o"]}
+{"text": "hecat", "words": ["hecat"]}
 {"text": "helic", "words": ["helic"]}
 {"text": "helico", "words": ["helic", "o"]}
 {"text": "heli", "words": ["heli"]}
 {"text": "helio", "words": ["heli", "o"]}
+{"text": "hemi", "words": ["hemi"]}
 {"text": "hem", "words": ["hem"]}
 {"text": "hemo", "words": ["hem", "o"]}
 {"text": "hema", "words": ["hem", "a"]}
+{"text": "hepa", "words": ["hepa"]}
 {"text": "hept", "words": ["hept"]}
 {"text": "hepta", "words": ["hept", "a"]}
+{"text": "herbi", "words": ["herbi"]}
+{"text": "hetero", "words": ["hetero"]}
 {"text": "hex", "words": ["hex"]}
 {"text": "hexa", "words": ["hex", "a"]}
+{"text": "histo", "words": ["histo"]}
+{"text": "homo", "words": ["homo"]}
+{"text": "homeo", "words": ["homeo"]}
 {"text": "hydr", "words": ["hydr"]}
 {"text": "hydro", "words": ["hydr", "o"]}
 {"text": "hygr", "words": ["hygr"]}
 {"text": "hygro", "words": ["hygr", "o"]}
+{"text": "hyper", "words": ["hyper"]}
 {"text": "hyp", "words": ["hyp"]}
 {"text": "hypo", "words": ["hyp", "o"]}
 {"text": "iatr", "words": ["iatr"]}
 {"text": "iatro", "words": ["iatr", "o"]}
 {"text": "icon", "words": ["icon"]}
 {"text": "icono", "words": ["icon", "o"]}
+{"text": "idio", "words": ["idio"]}
+{"text": "ig", "words": ["ig"]}
+{"text": "il", "words": ["il"]}
+{"text": "im", "words": ["im"]}
+{"text": "in", "words": ["in"]}
+{"text": "ir", "words": ["ir"]}
+{"text": "imag", "words": ["imag"]}
+{"text": "infra", "words": ["infra"]}
+{"text": "inter", "words": ["inter"]}
+{"text": "intra", "words": ["intra"]}
+{"text": "intro", "words": ["intro"]}
+{"text": "ir", "words": ["ir"]}
+{"text": "iso", "words": ["iso"]}
+{"text": "ject", "words": ["ject"]}
+{"text": "jud", "words": ["jud"]}
+{"text": "junct", "words": ["junct"]}
+{"text": "juven", "words": ["juven"]}
+{"text": "kilo", "words": ["kilo"]}
 {"text": "kine", "words": ["kine"]}
 {"text": "kinet", "words": ["kine", "t"]}
 {"text": "mat", "words": ["mat"]}
 {"text": "mato", "words": ["mat", "o"]}
+{"text": "lab", "words": ["lab"]}
 {"text": "lact", "words": ["lact"]}
 {"text": "lacto", "words": ["lact", "o"]}
+{"text": "later", "words": ["later"]}
 {"text": "leuk", "words": ["leuk"]}
 {"text": "leuko", "words": ["leuk", "o"]}
 {"text": "leuc", "words": ["leuc"]}
 {"text": "leuco", "words": ["leuc", "o"]}
+{"text": "lex", "words": ["lex"]}
+{"text": "liber", "words": ["liber"]}
+{"text": "lingu", "words": ["lingu"]}
 {"text": "lip", "words": ["lip"]}
 {"text": "lipo", "words": ["lip", "o"]}
+{"text": "lite", "words": ["lite"]}
+{"text": "ite", "words": ["ite"]}
 {"text": "lith", "words": ["lith"]}
 {"text": "litho", "words": ["lith", "o"]}
+{"text": "loc", "words": ["loc"]}
 {"text": "log", "words": ["log"]}
 {"text": "logo", "words": ["log", "o"]}
+{"text": "loqu", "words": ["loqu"]}
+{"text": "locu", "words": ["locu"]}
+{"text": "luc", "words": ["luc"]}
+{"text": "lud", "words": ["lud"]}
+{"text": "lus", "words": ["lus"]}
+{"text": "lumin", "words": ["lumin"]}
 {"text": "lun", "words": ["lun"]}
 {"text": "luna", "words": ["lun", "a"]}
 {"text": "luni", "words": ["lun", "i"]}
+{"text": "macro", "words": ["macro"]}
 {"text": "magn", "words": ["magn"]}
 {"text": "magna", "words": ["magn", "a"]}
 {"text": "magni", "words": ["magn", "i"]}
@@ -168,51 +309,106 @@
 {"text": "man", "words": ["man"]}
 {"text": "mani", "words": ["man", "i"]}
 {"text": "manu", "words": ["man", "u"]}
+{"text": "mand", "words": ["mand"]}
+{"text": "mania", "words": ["mania"]}
 {"text": "mar", "words": ["mar"]}
 {"text": "mari", "words": ["mar", "i"]}
+{"text": "mater", "words": ["mater"]}
 {"text": "matr", "words": ["matr"]}
 {"text": "matri", "words": ["matr", "i"]}
+{"text": "max", "words": ["max"]}
+{"text": "medi", "words": ["medi"]}
+{"text": "mega", "words": ["mega"]}
 {"text": "melan", "words": ["melan"]}
 {"text": "melano", "words": ["melan", "o"]}
 {"text": "memor", "words": ["memor"]}
 {"text": "memori", "words": ["memor", "i"]}
+{"text": "merge", "words": ["merge"]}
+{"text": "mers", "words": ["mers"]}
+{"text": "meso", "words": ["meso"]}
+{"text": "meta", "words": ["meta"]}
+{"text": "meter", "words": ["meter"]}
 {"text": "metr", "words": ["metr"]}
 {"text": "metry", "words": ["metr", "y"]}
+{"text": "micro", "words": ["micro"]}
+{"text": "mid", "words": ["mid"]}
+{"text": "migr", "words": ["migr"]}
+{"text": "milli", "words": ["milli"]}
 {"text": "min", "words": ["min"]}
 {"text": "mini", "words": ["min", "i"]}
 {"text": "mis", "words": ["mis"]}
 {"text": "miso", "words": ["mis", "o"]}
+{"text": "miss", "words": ["miss"]}
+{"text": "mit", "words": ["mit"]}
+{"text": "mob", "words": ["mob"]}
 {"text": "mon", "words": ["mon"]}
 {"text": "mono", "words": ["mon", "o"]}
+{"text": "mot", "words": ["mot"]}
+{"text": "mov", "words": ["mov"]}
 {"text": "morph", "words": ["morph"]}
 {"text": "morpho", "words": ["morph", "o"]}
+{"text": "mort", "words": ["mort"]}
+{"text": "multi", "words": ["multi"]}
+{"text": "mut", "words": ["mut"]}
 {"text": "my", "words": ["my"]}
 {"text": "myo", "words": ["my", "o"]}
+{"text": "narr", "words": ["narr"]}
+{"text": "nat", "words": ["nat"]}
+{"text": "nav", "words": ["nav"]}
 {"text": "necr", "words": ["necr"]}
 {"text": "necro", "words": ["necr", "o"]}
+{"text": "neg", "words": ["neg"]}
+{"text": "neo", "words": ["neo"]}
 {"text": "nephr", "words": ["nephr"]}
 {"text": "nephro", "words": ["nephr", "o"]}
 {"text": "neur", "words": ["neur"]}
 {"text": "neuro", "words": ["neur", "o"]}
 {"text": "nom", "words": ["nom"]}
 {"text": "nomin", "words": ["nom", "in"]}
+{"text": "non", "words": ["non"]}
+{"text": "not", "words": ["not"]}
+{"text": "noun", "words": ["noun"]}
+{"text": "nunc", "words": ["nunc"]}
+{"text": "nov", "words": ["nov"]}
+{"text": "numer", "words": ["numer"]}
+{"text": "ob", "words": ["ob"]}
+{"text": "op", "words": ["op"]}
 {"text": "oct", "words": ["oct"]}
 {"text": "octa", "words": ["oct", "a"]}
 {"text": "octo", "words": ["oct", "o"]}
+{"text": "ocu", "words": ["ocu"]}
+{"text": "od", "words": ["od"]}
+{"text": "odor", "words": ["odor"]}
+{"text": "omni", "words": ["omni"]}
 {"text": "op", "words": ["op"]}
 {"text": "opt", "words": ["op", "t"]}
 {"text": "ops", "words": ["op", "s"]}
+{"text": "opt", "words": ["opt"]}
+{"text": "ortho", "words": ["ortho"]}
+{"text": "osteo", "words": ["osteo"]}
+{"text": "out", "words": ["out"]}
+{"text": "over", "words": ["over"]}
 {"text": "oxi", "words": ["oxi"]}
 {"text": "oxioxy", "words": ["oxi", "oxy"]}
 {"text": "pale", "words": ["pale"]}
 {"text": "paleo", "words": ["pale", "o"]}
+{"text": "pan", "words": ["pan"]}
+{"text": "para", "words": ["para"]}
+{"text": "para", "words": ["para"]}
+{"text": "pater", "words": ["pater"]}
 {"text": "patr", "words": ["patr"]}
 {"text": "patri", "words": ["patr", "i"]}
+{"text": "path", "words": ["path"]}
 {"text": "ped", "words": ["ped"]}
 {"text": "pedi", "words": ["ped", "i"]}
 {"text": "pede", "words": ["ped", "e"]}
+{"text": "pel", "words": ["pel"]}
 {"text": "pent", "words": ["pent"]}
 {"text": "penta", "words": ["pent", "a"]}
+{"text": "pept", "words": ["pept"]}
+{"text": "peps", "words": ["peps"]}
+{"text": "per", "words": ["per"]}
+{"text": "peri", "words": ["peri"]}
 {"text": "phag", "words": ["phag"]}
 {"text": "phage", "words": ["phag", "e"]}
 {"text": "phil", "words": ["phil"]}
@@ -225,16 +421,30 @@
 {"text": "photo", "words": ["phot", "o"]}
 {"text": "phyll", "words": ["phyll"]}
 {"text": "phyllo", "words": ["phyll", "o"]}
+{"text": "phys", "words": ["phys"]}
 {"text": "phyt", "words": ["phyt"]}
 {"text": "phyto", "words": ["phyt", "o"]}
 {"text": "phyte", "words": ["phyt", "e"]}
 {"text": "plas", "words": ["plas"]}
 {"text": "plast", "words": ["plas", "t"]}
 {"text": "plasm", "words": ["plas", "m"]}
+{"text": "plaud", "words": ["plaud"]}
+{"text": "plod", "words": ["plod"]}
+{"text": "plaus", "words": ["plaus"]}
+{"text": "plos", "words": ["plos"]}
 {"text": "pneum", "words": ["pneum"]}
 {"text": "pneumo", "words": ["pneum", "o"]}
 {"text": "pod", "words": ["pod"]}
 {"text": "pode", "words": ["pod", "e"]}
+{"text": "poli", "words": ["poli"]}
+{"text": "poly", "words": ["poly"]}
+{"text": "pon", "words": ["pon"]}
+{"text": "pop", "words": ["pop"]}
+{"text": "port", "words": ["port"]}
+{"text": "pos", "words": ["pos"]}
+{"text": "post", "words": ["post"]}
+{"text": "pre", "words": ["pre"]}
+{"text": "pro", "words": ["pro"]}
 {"text": "prot", "words": ["prot"]}
 {"text": "proto", "words": ["prot", "o"]}
 {"text": "pseud", "words": ["pseud"]}
@@ -243,71 +453,146 @@
 {"text": "psycho", "words": ["psych", "o"]}
 {"text": "pugn", "words": ["pugn"]}
 {"text": "pugna", "words": ["pugn", "a"]}
+{"text": "pung", "words": ["pung"]}
+{"text": "pul", "words": ["pul"]}
+{"text": "purg", "words": ["purg"]}
+{"text": "put", "words": ["put"]}
 {"text": "pyr", "words": ["pyr"]}
 {"text": "pyro", "words": ["pyr", "o"]}
 {"text": "quad", "words": ["quad"]}
 {"text": "quadr", "words": ["quad", "r"]}
 {"text": "quadri", "words": ["quad", "ri"]}
+{"text": "quart", "words": ["quart"]}
 {"text": "quin", "words": ["quin"]}
 {"text": "quint", "words": ["quin", "t"]}
+{"text": "radic", "words": ["radic"]}
+{"text": "radix", "words": ["radix"]}
+{"text": "radio", "words": ["radio"]}
 {"text": "ram", "words": ["ram"]}
 {"text": "rami", "words": ["ram", "i"]}
+{"text": "re", "words": ["re"]}
+{"text": "reg", "words": ["reg"]}
+{"text": "retro", "words": ["retro"]}
 {"text": "rhin", "words": ["rhin"]}
 {"text": "rhino", "words": ["rhin", "o"]}
 {"text": "rhod", "words": ["rhod"]}
 {"text": "rhodo", "words": ["rhod", "o"]}
+{"text": "rid", "words": ["rid"]}
 {"text": "rrh", "words": ["rrh"]}
 {"text": "rrhea", "words": ["rrh", "ea"]}
 {"text": "rrhoea", "words": ["rrh", "oea"]}
 {"text": "rrhag", "words": ["rrh", "ag"]}
+{"text": "rub", "words": ["rub"]}
+{"text": "rupt", "words": ["rupt"]}
+{"text": "san", "words": ["san"]}
+{"text": "scend", "words": ["scend"]}
+{"text": "sci", "words": ["sci"]}
 {"text": "scler", "words": ["scler"]}
 {"text": "sclero", "words": ["scler", "o"]}
 {"text": "scop", "words": ["scop"]}
 {"text": "scope", "words": ["scop", "e"]}
 {"text": "scopy", "words": ["scop", "y"]}
+{"text": "scrib", "words": ["scrib"]}
+{"text": "script", "words": ["script"]}
+{"text": "se", "words": ["se"]}
+{"text": "sect", "words": ["sect"]}
+{"text": "sed", "words": ["sed"]}
+{"text": "sid", "words": ["sid"]}
+{"text": "sess", "words": ["sess"]}
+{"text": "self", "words": ["self"]}
+{"text": "semi", "words": ["semi"]}
 {"text": "sept", "words": ["sept"]}
 {"text": "septi", "words": ["sept", "i"]}
+{"text": "serv", "words": ["serv"]}
+{"text": "sex", "words": ["sex"]}
+{"text": "sol", "words": ["sol"]}
+{"text": "sol", "words": ["sol"]}
 {"text": "somn", "words": ["somn"]}
 {"text": "somni", "words": ["somn", "i"]}
+{"text": "son", "words": ["son"]}
+{"text": "soph", "words": ["soph"]}
 {"text": "spec", "words": ["spec"]}
 {"text": "spect", "words": ["spec", "t"]}
+{"text": "spic", "words": ["spic"]}
+{"text": "sphere", "words": ["sphere"]}
+{"text": "spir", "words": ["spir"]}
+{"text": "sta", "words": ["sta"]}
+{"text": "stell", "words": ["stell"]}
+{"text": "struct", "words": ["struct"]}
+{"text": "sub", "words": ["sub"]}
+{"text": "sum", "words": ["sum"]}
+{"text": "super", "words": ["super"]}
 {"text": "sy", "words": ["sy"]}
 {"text": "sym", "words": ["sy", "m"]}
 {"text": "syn", "words": ["sy", "n"]}
 {"text": "syl", "words": ["sy", "l"]}
 {"text": "sys", "words": ["sy", "s"]}
+{"text": "tact", "words": ["tact"]}
+{"text": "tang", "words": ["tang"]}
 {"text": "tax", "words": ["tax"]}
 {"text": "taxo", "words": ["tax", "o"]}
+{"text": "techno", "words": ["techno"]}
 {"text": "tel", "words": ["tel"]}
 {"text": "tele", "words": ["tel", "e"]}
 {"text": "telo", "words": ["tel", "o"]}
 {"text": "temp", "words": ["temp"]}
 {"text": "tempor", "words": ["temp", "or"]}
+{"text": "ten", "words": ["ten"]}
+{"text": "tin", "words": ["tin"]}
+{"text": "tent", "words": ["tent"]}
+{"text": "ter", "words": ["ter"]}
+{"text": "trit", "words": ["trit"]}
 {"text": "term", "words": ["term"]}
 {"text": "termina", "words": ["term", "ina"]}
 {"text": "terr", "words": ["terr"]}
 {"text": "terra", "words": ["terr", "a"]}
 {"text": "terri", "words": ["terr", "i"]}
+{"text": "tetra", "words": ["tetra"]}
+{"text": "the", "words": ["the"]}
 {"text": "the", "words": ["the"]}
 {"text": "theo", "words": ["the", "o"]}
 {"text": "therm", "words": ["therm"]}
 {"text": "thermo", "words": ["therm", "o"]}
+{"text": "tort", "words": ["tort"]}
+{"text": "tox", "words": ["tox"]}
+{"text": "tract", "words": ["tract"]}
+{"text": "trans", "words": ["trans"]}
+{"text": "tri", "words": ["tri"]}
+{"text": "ultra", "words": ["ultra"]}
+{"text": "un", "words": ["un"]}
+{"text": "uni", "words": ["uni"]}
+{"text": "urb", "words": ["urb"]}
+{"text": "vac", "words": ["vac"]}
 {"text": "ven", "words": ["ven"]}
 {"text": "vent", "words": ["ven", "t"]}
 {"text": "ver", "words": ["ver"]}
 {"text": "veri", "words": ["ver", "i"]}
+{"text": "verb", "words": ["verb"]}
+{"text": "vers", "words": ["vers"]}
+{"text": "vert", "words": ["vert"]}
+{"text": "vice", "words": ["vice"]}
+{"text": "vid", "words": ["vid"]}
+{"text": "vince", "words": ["vince"]}
+{"text": "vic", "words": ["vic"]}
+{"text": "vis", "words": ["vis"]}
+{"text": "vid", "words": ["vid"]}
 {"text": "viv", "words": ["viv"]}
 {"text": "vivi", "words": ["viv", "i"]}
+{"text": "vit", "words": ["vit"]}
 {"text": "voc", "words": ["voc"]}
 {"text": "voci", "words": ["voc", "i"]}
 {"text": "vol", "words": ["vol"]}
 {"text": "voli", "words": ["vol", "i"]}
 {"text": "volu", "words": ["vol", "u"]}
+{"text": "vor", "words": ["vor"]}
+{"text": "vour", "words": ["vour"]}
+{"text": "xanth", "words": ["xanth"]}
 {"text": "xen", "words": ["xen"]}
 {"text": "xeno", "words": ["xen", "o"]}
 {"text": "xer", "words": ["xer"]}
 {"text": "xero", "words": ["xer", "o"]}
 {"text": "xeri", "words": ["xer", "i"]}
+{"text": "xyl", "words": ["xyl"]}
 {"text": "zo", "words": ["zo"]}
 {"text": "zoo", "words": ["zo", "o"]}
 {"text": "zyg", "words": ["zyg"]}

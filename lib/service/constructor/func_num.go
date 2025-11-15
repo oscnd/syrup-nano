@@ -32,12 +32,12 @@ func (r *Service) InitializeNo() {
 		}
 	}
 
-	r.no = maxToken
+	r.No = maxToken
 	if maxToken > 0 {
 		fmt.Printf("initialized constructor service with max token number: %d\n", maxToken)
 	}
 }
 
 func (r *Service) GetNum() uint64 {
-	return r.no
+	return r.No
 }

@@ -2,7 +2,9 @@ package constructor
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/bsthun/gut"
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 	"go.scnd.dev/open/syrup/nano/lib/util"
 )
@@ -54,7 +56,9 @@ func (r *Service) ProcessWord(word string) {
 				if err := r.pogreb.WordMapper.Delete([]byte(fullWord)); err != nil {
 					fmt.Printf("error removing suffixed word %s: %v\n", fullWord, err)
 				} else {
-					fmt.Printf("removed suffixed word %s (token no: %d) for base word %s\n", fullWord, tokenNo, word)
+					if false {
+						fmt.Printf("removed suffixed word %s (token no: %d) for base word %s\n", fullWord, tokenNo, word)
+					}
 				}
 
 				// remove from token mapper
@@ -64,8 +68,8 @@ func (r *Service) ProcessWord(word string) {
 			}
 		}
 
-		r.no++
-		tokenNo := r.no
+		r.No++
+		tokenNo := r.No
 		count := uint64(1)
 
 		if err := r.pogreb.WordMapper.Put([]byte(word), util.MapperPayloadBuild(special, tokenNo, count)); err != nil {
@@ -78,7 +82,10 @@ func (r *Service) ProcessWord(word string) {
 			return
 		}
 
-		fmt.Printf("new word added: %s (token no: %d)\n", word, tokenNo)
+		if time.Now().After(r.LastLogged.Add(10 * time.Second)) {
+			gut.Debug(fmt.Sprintf("added to token no: %d", tokenNo))
+			r.LastLogged = gut.Ptr(time.Now())
+		}
 		return
 	}
 
