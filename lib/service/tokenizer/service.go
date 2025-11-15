@@ -19,6 +19,7 @@ type Service struct {
 	pogreb            *pogreb.Pogreb
 	WordSpecialLookup map[rune][]string
 	WordSpecialToken  map[string]uint64
+	WordRootLookup    map[rune][]*tuple.CompoundWord
 }
 
 func Serve(
@@ -30,6 +31,7 @@ func Serve(
 		pogreb:            pogreb,
 		WordSpecialLookup: make(map[rune][]string),
 		WordSpecialToken:  make(map[string]uint64),
+		WordRootLookup:    make(map[rune][]*tuple.CompoundWord),
 	}
 
 	s.LoadWordModifier()

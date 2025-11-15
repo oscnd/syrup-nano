@@ -16,6 +16,25 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 	i := 0
 
 	for i < len(line) {
+		// check for compound word first using WordRootCheck utility
+		compoundWord := util.WordRootCheck(line, i, r.WordRootLookup)
+		if compoundWord != nil {
+			// case of accumulated characters before, add them as a word
+			if len(current) > 0 {
+				wordPair := r.ProcessWord(string(current))
+				pairs = append(pairs, wordPair...)
+				current = current[:0] // clear accumulated characters
+			}
+
+			// process each subword in the compound word
+			for _, subword := range compoundWord.Words {
+				wordPair := r.ProcessWord(subword)
+				pairs = append(pairs, wordPair...)
+			}
+			i += len(compoundWord.Compound)
+			continue
+		}
+
 		// check for special word
 		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
 		if specialWord != "" {
@@ -36,7 +55,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 				Token: tokenNo,
 			})
 			i += len(specialWord)
-			goto nextIteration
+			continue
 		}
 
 		// check if character is uppercase (modifier)
@@ -52,6 +71,12 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 			consecutiveUpper := false
 			var j int
 			for j = i + 1; j < len(line); j++ {
+				// break on compound word check
+				if util.WordRootCheck(line, j, r.WordRootLookup) != nil {
+					consecutiveUpper = true
+					break
+				}
+
 				// break on special word check
 				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != "" {
 					consecutiveUpper = true
@@ -78,7 +103,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 				wordPair := r.ProcessWord(strings.ToLower(line[i:j]))
 				pairs = append(pairs, wordPair...)
 				i = j
-				goto nextIteration
+				continue
 			} else {
 				pairs = append(pairs, &tuple.WordPair{
 					Word:  string(enum.WordModifierNextCamel),
@@ -86,15 +111,13 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 				})
 				current = append(current, unicode.ToLower(rune(line[i])))
 				i++
-				goto nextIteration
+				continue
 			}
 		}
 
 		// add character to current word
 		current = append(current, unicode.ToLower(rune(line[i])))
 		i++
-
-	nextIteration:
 	}
 
 	// add any remaining characters as a word

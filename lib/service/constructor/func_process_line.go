@@ -15,6 +15,28 @@ func (r *Service) ProcessLine(line string) []any {
 	i := 0
 
 	for i < len(line) {
+		// check for compound word first using WordRootCheck utility
+		compoundWord := util.WordRootCheck(line, i, r.WordRootLookup)
+		if compoundWord != nil {
+			// case of accumulated characters before, add them as a word
+			if len(current) > 0 {
+				values = append(values, string(current))
+				current = current[:0] // clear accumulated characters
+			}
+
+			// process each subword in the compound word
+			for _, subword := range compoundWord.Words {
+				value, err := r.pogreb.WordMapper.Get([]byte(subword))
+				if err != nil || value == nil {
+					fmt.Printf("error retrieving subword token %s: %v\n", subword, err)
+				}
+				_, tokenNo, _ := util.MapperPayloadExtract(value)
+				values = append(values, tokenNo)
+			}
+			i += len(compoundWord.Compound)
+			continue
+		}
+
 		// check for special word using WordSpecialCheck utility
 		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
 		if specialWord != "" {
@@ -32,7 +54,7 @@ func (r *Service) ProcessLine(line string) []any {
 			_, tokenNo, _ := util.MapperPayloadExtract(value)
 			values = append(values, tokenNo)
 			i += len(specialWord)
-			goto nextIteration
+			continue
 		}
 
 		// check if character is uppercase
@@ -47,6 +69,12 @@ func (r *Service) ProcessLine(line string) []any {
 			consecutiveUpper := false
 			var j int
 			for j = i; j < len(line); j++ {
+				// break on compound word check
+				if util.WordRootCheck(line, j, r.WordRootLookup) != nil {
+					consecutiveUpper = true
+					break
+				}
+
 				// break on special word check
 				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != "" {
 					consecutiveUpper = true
@@ -68,7 +96,7 @@ func (r *Service) ProcessLine(line string) []any {
 				values = append(values, enum.WordModifier[enum.WordModifierNextUpper])
 				values = append(values, strings.ToLower(line[i:j]))
 				i = j
-				goto nextIteration
+				continue
 			} else {
 				values = append(values, enum.WordModifier[enum.WordModifierNextCamel])
 			}
@@ -77,8 +105,6 @@ func (r *Service) ProcessLine(line string) []any {
 		// add character to current word
 		current = append(current, unicode.ToLower(rune(line[i])))
 		i++
-
-	nextIteration:
 	}
 
 	// add any remaining characters as a word
