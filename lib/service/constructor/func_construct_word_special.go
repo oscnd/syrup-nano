@@ -12,23 +12,6 @@ import (
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 )
 
-func (r *Service) ConstructWordSpecialAppend(word string) {
-	firstChar := rune(word[0])
-	r.WordSpecialLookup[firstChar] = append(r.WordSpecialLookup[firstChar], word)
-	slices.SortFunc(r.WordSpecialLookup[firstChar], func(a, b string) int {
-		if len(a) != len(b) {
-			return len(a) - len(b)
-		}
-		if a < b {
-			return -1
-		}
-		if a > b {
-			return 1
-		}
-		return 0
-	})
-}
-
 func (r *Service) ConstructWordSpecial(pattern string) {
 	// * glob jsonl files
 	matches, err := filepath.Glob(pattern)
@@ -85,4 +68,21 @@ func (r *Service) ConstructWordSpecialFile(filePath string) {
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("error reading file %s: %v\n", filePath, err)
 	}
+}
+
+func (r *Service) ConstructWordSpecialAppend(word string) {
+	firstChar := rune(word[0])
+	r.WordSpecialLookup[firstChar] = append(r.WordSpecialLookup[firstChar], word)
+	slices.SortFunc(r.WordSpecialLookup[firstChar], func(a, b string) int {
+		if len(a) != len(b) {
+			return len(a) - len(b)
+		}
+		if a < b {
+			return -1
+		}
+		if a > b {
+			return 1
+		}
+		return 0
+	})
 }

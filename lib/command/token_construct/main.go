@@ -26,6 +26,6 @@ func main() {
 
 func invoke(shutdowner fx.Shutdowner, constructor constructor.Server) {
 	constructor.ConstructWordSpecial("dataset/tokenizer/word_*.jsonl")
-	constructor.ConstructFromGlob("download/code/*.jsonl")
+	constructor.ConstructWordRoot("dataset/tokenizer/root.jsonl")
 	_ = shutdowner.Shutdown()
 }
