@@ -41,14 +41,14 @@ wandb_run_name = 'nano-run'
 
 # data
 train_split = 0.9
-gradient_accumulation_steps = 1
-batch_size = 64
-block_size = 256
+gradient_accumulation_steps = 2
+batch_size = 32
+block_size = 128
 
 # baby gpt model
 n_layer = 6
 n_head = 6
-n_embd = 384
+n_embd = 256
 dropout = 0.2
 bias = False
 
@@ -193,8 +193,8 @@ torch.manual_seed(1337 + seed_offset)
 torch.backends.cuda.matmul.fp32_precision = 'tf32'
 torch.backends.cudnn.conv.fp32_precision = 'tf32'
 device_type = 'cuda' if 'cuda' in device else 'cpu'
-ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[dtype]
-ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
+torch_dtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[dtype]
+ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=device_type, dtype=torch_dtype)
 
 
 # data loader
