@@ -17,7 +17,7 @@ import (
 const (
 	targetWords   = 100000
 	maxWordLength = 16
-	minWordCount  = 10
+	minWordCount  = 20
 )
 
 // SubwordCandidate represents a potential subword for extraction

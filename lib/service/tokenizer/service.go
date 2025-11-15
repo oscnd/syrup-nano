@@ -8,17 +8,17 @@ import (
 
 type Server interface {
 	LoadWordModifier()
-	LoadWordSpecial()
+	LoadWord()
 	ProcessLine(line string) []*tuple.WordPair
 	ProcessWord(word string) []*tuple.WordPair
 	Decode(token uint64) string
 }
 
 type Service struct {
-	config            *config.Config
-	pogreb            *pogreb.Pogreb
-	WordSpecialLookup map[rune][]*tuple.SpecialWord
-	WordSpecialToken  map[string]uint64
+	config     *config.Config
+	pogreb     *pogreb.Pogreb
+	WordLookup map[rune][]*tuple.SpecialWord
+	WordToken  map[string]uint64
 }
 
 func Serve(
@@ -26,14 +26,14 @@ func Serve(
 	pogreb *pogreb.Pogreb,
 ) Server {
 	s := &Service{
-		config:            config,
-		pogreb:            pogreb,
-		WordSpecialLookup: make(map[rune][]*tuple.SpecialWord),
-		WordSpecialToken:  make(map[string]uint64),
+		config:     config,
+		pogreb:     pogreb,
+		WordLookup: make(map[rune][]*tuple.SpecialWord),
+		WordToken:  make(map[string]uint64),
 	}
 
 	s.LoadWordModifier()
-	s.LoadWordSpecial()
+	s.LoadWord()
 
 	return s
 }

@@ -1,18 +1,13 @@
 package tokenizer
 
 import (
-	"fmt"
-
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
-	"go.scnd.dev/open/syrup/nano/lib/util"
 )
 
 func (r *Service) ProcessWord(word string) []*tuple.WordPair {
-	// try to get word from pogreb directly
-	value, err := r.pogreb.WordMapper.Get([]byte(word))
-	if err == nil && value != nil {
-		_, tokenNo, _ := util.MapperPayloadExtract(value)
+	// try to get word from WordToken map directly
+	if tokenNo, exists := r.WordToken[word]; exists {
 		return []*tuple.WordPair{
 			{
 				Word:  word,
@@ -50,16 +45,11 @@ func (r *Service) ProcessWordGeneralize(word string) ([]*tuple.WordPair, enum.Wo
 				block = suffixBlock
 				word = block.BaseWord(word)
 
-				// get base word from pogreb
-				value, err := r.pogreb.WordMapper.Get([]byte(word))
-				if err != nil {
-					fmt.Printf("error retrieving base word from pogreb: %v\n", err)
-				}
-				if value == nil {
+				// get base word from WordToken map
+				tokenNo, exists := r.WordToken[word]
+				if !exists {
 					continue
 				}
-
-				_, tokenNo, _ := util.MapperPayloadExtract(value)
 				return append([]*tuple.WordPair{
 					{
 						Word:  word,

@@ -22,8 +22,8 @@ func (r *Service) ProcessLine(line string) []any {
 			continue
 		}
 
-		// check for special word using WordSpecialCheck utility
-		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
+		// check for special word
+		specialWord := util.WordLookupCheck(line, i, r.WordSpecialLookup)
 		if specialWord != nil {
 			// case of accumulated characters before, add them as a word
 			if len(current) > 0 {
@@ -57,7 +57,7 @@ func (r *Service) ProcessLine(line string) []any {
 			var j int
 			for j = i; j < len(line); j++ {
 				// break on word special check
-				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != nil {
+				if util.WordLookupCheck(line, j, r.WordSpecialLookup) != nil {
 					consecutiveUpper = true
 					break
 				}

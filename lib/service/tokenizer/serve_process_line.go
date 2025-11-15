@@ -15,8 +15,8 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 	i := 0
 
 	for i < len(line) {
-		// check for special word using WordSpecialCheck utility
-		specialWord := util.WordSpecialCheck(line, i, r.WordSpecialLookup)
+		// check for word using WordLookupCheck utility (includes look-ahead functionality)
+		specialWord := util.WordLookupCheck(line, i, r.WordLookup)
 		if specialWord != nil {
 			// case of accumulated characters before, add them as a word
 			if len(current) > 0 {
@@ -48,7 +48,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 			var j int
 			for j = i + 1; j < len(line); j++ {
 				// break on word special check
-				if util.WordSpecialCheck(line, j, r.WordSpecialLookup) != nil {
+				if util.WordLookupCheck(line, j, r.WordLookup) != nil {
 					consecutiveUpper = true
 					break
 				}

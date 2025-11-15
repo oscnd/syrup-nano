@@ -2,7 +2,7 @@ package util
 
 import "go.scnd.dev/open/syrup/nano/lib/type/tuple"
 
-func WordSpecialCheck(line string, startIndex int, lookup map[rune][]*tuple.SpecialWord) *tuple.SpecialWord {
+func WordLookupCheck(line string, startIndex int, lookup map[rune][]*tuple.SpecialWord) *tuple.SpecialWord {
 	if startIndex >= len(line) {
 		return nil
 	}
