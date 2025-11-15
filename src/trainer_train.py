@@ -22,7 +22,7 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.distributed import init_process_group, destroy_process_group
 from trainer_model import Config, Module
 from nano import Nano
-from tokenizer import WordEncodeResult
+from word import WordEncodeResult
 
 # configuration
 out_dir = '.local/output'

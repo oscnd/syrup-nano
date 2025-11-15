@@ -8,7 +8,7 @@ from contextlib import nullcontext
 import torch
 from trainer_model import Config, Module
 from nano import Nano
-from tokenizer import WordEncodeResult
+from word import WordEncodeResult
 
 init_from = 'resume'
 out_dir = '.local/output'
