@@ -1,6 +1,8 @@
 package tokenizer
 
 import (
+	"fmt"
+
 	"go.scnd.dev/open/syrup/nano/lib/type/enum"
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 	"go.scnd.dev/open/syrup/nano/lib/util"
@@ -25,7 +27,12 @@ func (r *Service) ProcessWord(word string) []*tuple.WordPair {
 	}
 
 	// word not found
-	return []*tuple.WordPair{}
+	return []*tuple.WordPair{
+		{
+			Word:  word,
+			Token: 0,
+		},
+	}
 }
 
 func (r *Service) ProcessWordGeneralize(word string) ([]*tuple.WordPair, enum.WordSuffixType) {
@@ -33,23 +40,40 @@ func (r *Service) ProcessWordGeneralize(word string) ([]*tuple.WordPair, enum.Wo
 		return nil, ""
 	}
 
-	// Iterate through suffix mappings to find matches
-	for suffixKey, suffixBlock := range enum.WordSuffix {
-		if suffixBlock.Check(word) {
-			baseWord := suffixBlock.BaseWord(word)
-			if value, err := r.pogreb.WordMapper.Get([]byte(baseWord)); err == nil && value != nil {
+	// iterate through suffix mappings to find matches
+	wordPairs := make([]*tuple.WordPair, 0)
+	for {
+		block := new(enum.WordSuffixBlock)
+		for suffixKey, suffixBlock := range enum.WordSuffix {
+			if suffixBlock.Check(word) {
+				// assign suffix block
+				block = suffixBlock
+				word = block.BaseWord(word)
+
+				// get base word from pogreb
+				value, err := r.pogreb.WordMapper.Get([]byte(word))
+				if err != nil {
+					fmt.Printf("error retrieving base word from pogreb: %v\n", err)
+				}
+				if value == nil {
+					continue
+				}
+
 				_, tokenNo, _ := util.MapperPayloadExtract(value)
-				return []*tuple.WordPair{
+				return append([]*tuple.WordPair{
 					{
-						Word:  baseWord,
+						Word:  word,
 						Token: tokenNo,
 					},
 					{
 						Word:  string(suffixKey),
 						Token: suffixBlock.TokenNo,
 					},
-				}, suffixKey
+				}, wordPairs...), suffixKey
 			}
+		}
+		if block.Suffix == "" {
+			break
 		}
 	}
 

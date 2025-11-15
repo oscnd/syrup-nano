@@ -23,6 +23,7 @@ from torch.distributed import init_process_group, destroy_process_group
 from trainer_model import Config, Module
 from nano import Nano
 from word import WordEncodeResult
+from loader import create_loader
 
 # configuration
 out_dir = '.local/output'
@@ -39,7 +40,6 @@ wandb_project = 'nano'
 wandb_run_name = 'nano-run'
 
 # data
-dataset = 'download/code/*.jsonl'
 train_split = 0.9
 gradient_accumulation_steps = 1
 batch_size = 64
@@ -86,18 +86,14 @@ def prepare_data():
         print(f"data already prepared in {out_dir}")
         return out_dir
 
-    print(f"preparing data from {dataset}...")
+    print(f"preparing data from loader...")
     os.makedirs(out_dir, exist_ok=True)
 
-    # get jsonl dataset files
-    jsonl_files = glob.glob(dataset)
+    # create loader
+    loader = create_loader()
 
-    if not jsonl_files:
-        raise FileNotFoundError(f"no jsonl files found in {dataset}")
-
-    print(f"found {len(jsonl_files)} jsonl files:")
-    for file_path in jsonl_files:
-        print(f"  - {file_path}")
+    if len(loader) == 0:
+        raise ValueError("no data found in loader")
 
     # initialize tokenizer
     nano = Nano()
@@ -105,30 +101,33 @@ def prepare_data():
 
     # read and tokenize all data
     all_tokens = []
+    processed_count = 0
 
-    for file_path in jsonl_files:
-        print(f"\nProcessing file: {file_path}")
+    print(f"processing {len(loader)} entries...")
 
-        with open(file_path, 'r', encoding='utf-8') as file:
-            for line_num, line in enumerate(file):
-                if line_num % 100 == 0:
-                    print(f"  line {line_num}...")
+    while True:
+        result = loader.get()
+        if result is None:
+            break
 
-                try:
-                    data = json.loads(line.strip())
-                    content = data.get('content', '')
+        metadata, content = result
 
-                    if content:
-                        result = nano.encode(content)
-                        parsed = WordEncodeResult(result)
-                        tokens = parsed.to_token_list()
-                        all_tokens.extend(tokens)
+        if processed_count % 1000 == 0:
+            print(f"  processed {processed_count}/{len(loader)} entries...")
 
-                except json.JSONDecodeError as e:
-                    print(f"  error parsing line {line_num}: {e}")
-                    continue
+        try:
+            if content:
+                result = nano.encode(content)
+                parsed = WordEncodeResult(result)
+                tokens = parsed.to_token_list()
+                all_tokens.extend(tokens)
+                processed_count += 1
+        except Exception as e:
+            print(f"  error processing {metadata}: {e}")
+            continue
 
-    print(f"\ntotal tokens: {len(all_tokens):,}")
+    print(f"\ntotal entries processed: {processed_count:,}")
+    print(f"total tokens: {len(all_tokens):,}")
 
     # convert to numpy array
     all_tokens = np.array(all_tokens, dtype=np.uint32)
