@@ -43,12 +43,12 @@ wandb_run_name = 'nano-run'
 train_split = 0.9
 gradient_accumulation_steps = 2
 batch_size = 32
-block_size = 128
+block_size = 256
 
 # baby gpt model
 n_layer = 6
 n_head = 6
-n_embd = 256
+n_embd = 384
 dropout = 0.2
 bias = False
 

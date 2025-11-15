@@ -125,6 +125,9 @@ class Module(nn.Module):
         # apply config
         self.config = config
 
+        # language model head
+        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+
         # transformer
         self.transformer = nn.ModuleDict(dict(
             wte = nn.Embedding(config.vocab_size, config.n_embd),
@@ -138,9 +141,6 @@ class Module(nn.Module):
         # This behavior is deprecated and will be an error in future versions"
         # not 100% sure what this is, so far seems to be harmless. TODO investigate
         self.transformer.wte.weight = self.lm_head.weight # https://paperswithcode.com/method/weight-tying
-
-        # language model head
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
 
         # gradient checkpointing
         self.gradient_checkpointing = True
