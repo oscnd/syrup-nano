@@ -15,7 +15,7 @@ print(f"constructed word root with final token number: {nano.get_num()}")
 nano.construct_from_glob("download/code/*.jsonl")
 print(f"code dataset with final token number: {nano.get_num()}")
 
-# load tiny-webtext dataset
+# load nampdn-ai/tiny-webtext dataset
 ds = load_dataset("nampdn-ai/tiny-webtext")
 print(f"dataset: {ds}")
 
@@ -25,7 +25,14 @@ for i in range(len(ds['train'])):
     filename = f"nampdn-tiny-webtext/train:{i}"
     nano.construct_content(filename, content)
 
-    if (i + 1) % 1000 == 0:
-        print(f"Processed {i+1}/{len(ds['train'])} entries. Token count: {nano.get_num()}")
+# load nampdn-ai/tiny-textbooks dataset
+ds = load_dataset("nampdn-ai/tiny-textbooks")
+print(f"dataset: {ds}")
+
+# process training set
+for i in range(len(ds['train'])):
+    content = ds['train'][i]['bot']
+    filename = f"nampdn-tiny-webtext/train:{i}"
+    nano.construct_content(filename, content)
 
 print(f"final token number: {nano.get_num()}")
