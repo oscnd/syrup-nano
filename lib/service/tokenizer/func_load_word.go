@@ -37,7 +37,6 @@ func (r *Service) LoadWord() {
 		_, tokenNo, _ := util.MapperPayloadExtract(value)
 		r.WordToken[word] = tokenNo
 
-		// Also add to lookup for potential matching
 		if len(word) > 0 {
 			r.WordAppend(word)
 		}
@@ -58,26 +57,17 @@ func (r *Service) LoadWordSpecialFromFile(filePath string) {
 	for scanner.Scan() {
 		line := scanner.Bytes()
 
-		word := new(tuple.Word)
+		word := new(tuple.SpecialWord)
 		if err := json.Unmarshal(line, word); err != nil {
 			fmt.Printf("error unmarshaling line in file %s: %v\n", filePath, err)
 			continue
 		}
 
 		// set word lookup
-		if len(word.Word) > 0 {
-			// append to word lookup list
-			r.WordAppend(word.Word)
-
-			// load and fetch pogreb for token and store in map
-			value, err := r.pogreb.WordMapper.Get([]byte(word.Word))
-			if err != nil || value == nil {
-				fmt.Printf("special word %s not found in pogreb\n", word.Word)
-				r.WordToken[word.Word] = 0
-			} else {
-				_, tokenNo, _ := util.MapperPayloadExtract(value)
-				r.WordToken[word.Word] = tokenNo
-			}
+		if len(word.Text) > 0 {
+			// add to word special lookup
+			firstChar := rune(word.Text[0])
+			r.WordSpecialLookup[firstChar] = append(r.WordSpecialLookup[firstChar], word)
 		}
 	}
 

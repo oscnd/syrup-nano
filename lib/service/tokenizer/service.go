@@ -15,10 +15,11 @@ type Server interface {
 }
 
 type Service struct {
-	config     *config.Config
-	pogreb     *pogreb.Pogreb
-	WordLookup map[rune][]*tuple.SpecialWord
-	WordToken  map[string]uint64
+	config            *config.Config
+	pogreb            *pogreb.Pogreb
+	WordLookup        map[rune][]*tuple.SpecialWord
+	WordSpecialLookup map[rune][]*tuple.SpecialWord
+	WordToken         map[string]uint64
 }
 
 func Serve(
@@ -26,10 +27,11 @@ func Serve(
 	pogreb *pogreb.Pogreb,
 ) Server {
 	s := &Service{
-		config:     config,
-		pogreb:     pogreb,
-		WordLookup: make(map[rune][]*tuple.SpecialWord),
-		WordToken:  make(map[string]uint64),
+		config:            config,
+		pogreb:            pogreb,
+		WordLookup:        make(map[rune][]*tuple.SpecialWord),
+		WordSpecialLookup: make(map[rune][]*tuple.SpecialWord),
+		WordToken:         make(map[string]uint64),
 	}
 
 	s.LoadWordModifier()

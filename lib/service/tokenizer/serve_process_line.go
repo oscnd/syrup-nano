@@ -4,6 +4,7 @@ import (
 	"unicode"
 
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
+	"go.scnd.dev/open/syrup/nano/lib/util"
 )
 
 func (r *Service) ProcessLine(line string) []*tuple.WordPair {
@@ -13,6 +14,16 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 
 	for i < len(line) {
 		char := rune(line[i])
+
+		// check for word special lookup boundary
+		if util.WordLookupCheck(line, i, r.WordSpecialLookup) != nil {
+			// flush accumulated characters before this boundary
+			if len(current) > 0 {
+				wordPair := r.ProcessWord(string(current))
+				pairs = append(pairs, wordPair...)
+				current = current[:0]
+			}
+		}
 
 		// check if character is uppercase (modifier) - check this FIRST
 		if unicode.IsUpper(char) {
@@ -28,7 +39,7 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 			pairs = append(pairs, modifier...)
 
 			if isCamelCase {
-				// for camel case, add the lowercase character to accumulator
+				// for camel case, add the lowercase character to accumulator and let it be processed normally
 				current = append(current, unicode.ToLower(char))
 				i += consumed
 			} else {
@@ -54,19 +65,8 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 
 	// flush any remaining accumulated characters
 	if len(current) > 0 {
-		wordStr := string(current)
-		offset := 0
-		for offset < len(wordStr) {
-			if wordPairs, consumed := r.ProcessCharacterLookup(wordStr, offset); consumed > 0 {
-				pairs = append(pairs, wordPairs...)
-				offset += consumed
-			} else {
-				// fallback to process word
-				wordPair := r.ProcessWord(wordStr[offset:])
-				pairs = append(pairs, wordPair...)
-				break
-			}
-		}
+		wordPair := r.ProcessWord(string(current))
+		pairs = append(pairs, wordPair...)
 	}
 
 	return pairs

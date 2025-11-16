@@ -10,19 +10,37 @@ import (
 )
 
 func (r *Service) ProcessWord(word string) []*tuple.WordPair {
-	// try to get word from WordToken map directly
-	if tokenNo, exists := r.WordToken[word]; exists {
-		return []*tuple.WordPair{
-			{
-				Word:  word,
-				Token: tokenNo,
-			},
-		}
+	// try suffix decomposition from longest to shortest (like ProcessCharacterLookup does)
+	boundary := len(word)
+	if boundary > 16 {
+		boundary = 16
 	}
 
-	// try to generalize word with suffix
-	if generalizedPair, _ := r.ProcessWordGeneralize(word); generalizedPair != nil {
-		return generalizedPair
+	for length := boundary; length >= 1; length-- {
+		substring := word[:length]
+
+		// try suffix decomposition
+		if pairs := r.ProcessWordSuffixMatch(substring); pairs != nil {
+			// if we consumed less than the full word, process the remaining part
+			if length < len(word) {
+				remaining := word[length:]
+
+				// recursively process the remaining part
+				remainingPairs := r.ProcessWord(remaining)
+				if len(remainingPairs) > 0 && remainingPairs[0].Token != 0 {
+					return append(pairs, remainingPairs...)
+				} else {
+					// remaining part not found, return single character
+					for _, char := range remaining {
+						pairs = append(pairs, &tuple.WordPair{
+							Word:  string(char),
+							Token: 0,
+						})
+					}
+				}
+			}
+			return pairs
+		}
 	}
 
 	// word not found
