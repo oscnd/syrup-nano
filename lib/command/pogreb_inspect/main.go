@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"slices"
 
@@ -38,8 +39,8 @@ func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		_, no, count := util.MapperPayloadExtract(val)
-		log.Printf("%11d %s %11d %s\n", no, string(key), count, key)
+		special, no, count := util.MapperPayloadExtract(val)
+		fmt.Printf("%t %11d %11d %s\n", special, no, count, key)
 		keys = append(keys, string(key))
 		if no > max {
 			max = no

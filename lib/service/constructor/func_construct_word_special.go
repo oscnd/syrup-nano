@@ -65,16 +65,5 @@ func (r *Service) ConstructWordSpecialAppend(text string, words []string) {
 		Text:  text,
 		Words: words,
 	})
-	slices.SortFunc(r.WordSpecialLookup[firstChar], func(a, b *tuple.SpecialWord) int {
-		if len(a.Text) != len(b.Text) {
-			return len(a.Text) - len(b.Text)
-		}
-		if a.Text < b.Text {
-			return -1
-		}
-		if a.Text > b.Text {
-			return 1
-		}
-		return 0
-	})
+	slices.SortFunc(r.WordSpecialLookup[firstChar], tuple.SpecialWordCompare)
 }

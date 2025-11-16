@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
 	"go.scnd.dev/open/syrup/nano/lib/util"
@@ -19,15 +20,13 @@ func (r *Service) LoadWord() {
 		return
 	}
 
-	// Process each special word file
+	// * process each special word file
 	for _, filePath := range matches {
 		r.LoadWordSpecialFromFile(filePath)
 	}
 
-	// Load all words from pogreb WordMapper into WordToken map
-	fmt.Printf("Loading full word-to-token map from pogreb...\n")
+	// * load pogreb word mapper
 	it := r.pogreb.WordMapper.Items()
-	count := 0
 	for {
 		key, value, err := it.Next()
 		if err != nil {
@@ -42,14 +41,9 @@ func (r *Service) LoadWord() {
 		if len(word) > 0 {
 			r.WordAppend(word)
 		}
-
-		count++
-		if count%10000 == 0 {
-			fmt.Printf("Loaded %d words...\n", count)
-		}
 	}
 
-	fmt.Printf("Finished loading %d words into WordToken map\n", count)
+	fmt.Printf("finished loading %d words into mapper\n", len(r.WordToken))
 }
 
 func (r *Service) LoadWordSpecialFromFile(filePath string) {
@@ -98,4 +92,6 @@ func (r *Service) WordAppend(word string) {
 		Text:  word,
 		Words: []string{word},
 	})
+
+	slices.SortFunc(r.WordLookup[firstChar], tuple.SpecialWordCompare)
 }

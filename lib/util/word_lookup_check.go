@@ -1,6 +1,8 @@
 package util
 
-import "go.scnd.dev/open/syrup/nano/lib/type/tuple"
+import (
+	"go.scnd.dev/open/syrup/nano/lib/type/tuple"
+)
 
 func WordLookupCheck(line string, startIndex int, lookup map[rune][]*tuple.SpecialWord) *tuple.SpecialWord {
 	if startIndex >= len(line) {
@@ -8,16 +10,16 @@ func WordLookupCheck(line string, startIndex int, lookup map[rune][]*tuple.Speci
 	}
 
 	currentChar := rune(line[startIndex])
-	possibleSpecials, exists := lookup[currentChar]
+	possibleWords, exists := lookup[currentChar]
 	if !exists {
 		return nil
 	}
 
-	// check each possible special word that starts with this character
-	for _, possibleSpecial := range possibleSpecials {
-		endIndex := startIndex + len(possibleSpecial.Text)
+	// check each possible word that starts with this character
+	for _, possibleWord := range possibleWords {
+		endIndex := startIndex + len(possibleWord.Text)
 
-		// make sure we don't go beyond the line length
+		// limit line length check
 		if endIndex > len(line) {
 			continue
 		}
@@ -26,8 +28,8 @@ func WordLookupCheck(line string, startIndex int, lookup map[rune][]*tuple.Speci
 		candidate := line[startIndex:endIndex]
 
 		// if it matches, return the special word
-		if candidate == possibleSpecial.Text {
-			return possibleSpecial
+		if candidate == possibleWord.Text {
+			return possibleWord
 		}
 	}
 
