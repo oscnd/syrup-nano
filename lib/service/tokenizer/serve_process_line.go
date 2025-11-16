@@ -24,19 +24,27 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 			}
 
 			// handle uppercase sequences
-			modifier, consumed, _ := r.ProcessUppercaseSequence(line, i)
+			modifier, consumed, isCamelCase := r.ProcessUppercaseSequence(line, i)
 			pairs = append(pairs, modifier...)
 
-			// skip consumed characters (camel case consumes 1, consecutive uppercase consumes more)
-			i += consumed
+			if isCamelCase {
+				// for camel case, add the lowercase character to accumulator
+				current = append(current, unicode.ToLower(char))
+				i += consumed
+			} else {
+				// for consecutive uppercase, skip all consumed characters
+				i += consumed
+			}
 			continue
 		}
 
-		// * check for word lookup
-		if wordPairs, consumed := r.ProcessCharacterLookup(line, i); consumed > 0 {
-			pairs = append(pairs, wordPairs...)
-			i += consumed
-			continue
+		// * check for word lookup only if accumulator is empty (to preserve words after camel case)
+		if len(current) == 0 {
+			if wordPairs, consumed := r.ProcessCharacterLookup(line, i); consumed > 0 {
+				pairs = append(pairs, wordPairs...)
+				i += consumed
+				continue
+			}
 		}
 
 		// accumulate lowercase character
@@ -46,8 +54,19 @@ func (r *Service) ProcessLine(line string) []*tuple.WordPair {
 
 	// flush any remaining accumulated characters
 	if len(current) > 0 {
-		wordPair := r.ProcessWord(string(current))
-		pairs = append(pairs, wordPair...)
+		wordStr := string(current)
+		offset := 0
+		for offset < len(wordStr) {
+			if wordPairs, consumed := r.ProcessCharacterLookup(wordStr, offset); consumed > 0 {
+				pairs = append(pairs, wordPairs...)
+				offset += consumed
+			} else {
+				// fallback to process word
+				wordPair := r.ProcessWord(wordStr[offset:])
+				pairs = append(pairs, wordPair...)
+				break
+			}
+		}
 	}
 
 	return pairs

@@ -18,7 +18,7 @@ func (r *Service) ProcessUppercaseSequence(line string, startIdx int) ([]*tuple.
 
 	for j < len(line) {
 		// break on special word check
-		if util.WordLookupCheck(line, j, r.WordLookup) != nil {
+		if util.WordLookupCheck(line, j, r.WordLookup) != nil && j > startIdx+1 {
 			consecutiveUpper = true
 			break
 		}
@@ -57,13 +57,6 @@ func (r *Service) ProcessUppercaseSequence(line string, startIdx int) ([]*tuple.
 		Token: enum.WordModifier[enum.WordModifierNextCamel],
 	})
 
-	// also return the lowercase character as a wordpair
-	lowerChar := strings.ToLower(string(line[startIdx]))
-	pairs = append(pairs, &tuple.WordPair{
-		Word:  lowerChar,
-		Token: 0,
-	})
-
-	// return modifier and character, consume 1 character
+	// return modifier only
 	return pairs, 1, true
 }
