@@ -48,10 +48,8 @@ func (r *Service) ConstructWordSpecialFile(filePath string) {
 		// * set word special lookup
 		r.ConstructWordSpecialAppend(special.Text, special.Words)
 
-		// * process subwords
-		for _, word := range special.Words {
-			r.ProcessWord(word)
-		}
+		// * process word
+		r.ProcessWord(special.Text, true)
 	}
 
 	if err := scanner.Err(); err != nil {

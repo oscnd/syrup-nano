@@ -10,7 +10,7 @@ import (
 	"go.scnd.dev/open/syrup/nano/lib/util"
 )
 
-func (r *Service) ProcessWord(word string) {
+func (r *Service) ProcessWord(word string, special bool) {
 	// * check special word
 	var specialWord *tuple.SpecialWord
 	if possibleSpecialWords, ok := r.WordSpecialLookup[rune(word[0])]; ok {
@@ -18,7 +18,7 @@ func (r *Service) ProcessWord(word string) {
 			if word == possibleSpecialWord.Text {
 				if len(possibleSpecialWord.Words) > 1 {
 					for _, w := range possibleSpecialWord.Words {
-						r.ProcessWord(w)
+						r.ProcessWord(w, false)
 					}
 					return
 				}
@@ -83,12 +83,13 @@ func (r *Service) ProcessWord(word string) {
 
 	r.No++
 	tokenNo := r.No
+	special = special || specialWord != nil
 
-	if specialWord != nil {
+	if special {
 		fmt.Printf("adding special word %s as token no: %d\n", word, tokenNo)
 	}
 
-	if err := r.pogreb.WordMapper.Put([]byte(word), util.MapperPayloadBuild(specialWord != nil, tokenNo, uint64(1))); err != nil {
+	if err := r.pogreb.WordMapper.Put([]byte(word), util.MapperPayloadBuild(special, tokenNo, uint64(1))); err != nil {
 		fmt.Printf("error inserting word %s: %v\n", word, err)
 		return
 	}

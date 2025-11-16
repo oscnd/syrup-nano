@@ -89,7 +89,7 @@ func (r *Service) ConstructContent(filename string, content string) {
 				continue
 			case string:
 				word := value.(string)
-				r.ProcessWord(word)
+				r.ProcessWord(word, false)
 			}
 		}
 
