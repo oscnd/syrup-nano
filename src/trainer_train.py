@@ -33,6 +33,7 @@ eval_iters = 200
 eval_only = False
 always_save_checkpoint = False
 init_from = 'scratch'
+debug = False
 
 # wandb logging
 wandb_log = False
@@ -122,6 +123,9 @@ def prepare_data():
                 tokens = parsed.to_token_list()
                 all_tokens.extend(tokens)
                 processed_count += 1
+
+                if debug:
+                    print(f"  content: {content[:30]!r}... => {tokens} (total tokens: {len(tokens)})")
         except Exception as e:
             print(f"  error processing {metadata}: {e}")
             continue

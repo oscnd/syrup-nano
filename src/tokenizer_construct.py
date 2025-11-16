@@ -36,3 +36,4 @@ print(f"final token number: {nano.get_num()}")
 
 # close nano
 nano.shutdown()
+input()
