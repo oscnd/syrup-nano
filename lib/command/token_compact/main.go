@@ -69,47 +69,46 @@ func main() {
 
 // * main token compaction function
 func CompactTokens(pogreb *pogreb.Pogreb, constructor constructor.Server, apply bool) {
-	// * verify database integrity before starting
-	duplicateCount := verifyDatabaseIntegrity(pogreb)
-	if duplicateCount > 0 {
-		fmt.Printf("warning: database contains %d duplicate entries, fixing first...\n", duplicateCount)
-		reassignSequentialTokens(pogreb, true) // * always fix duplicates first
-	}
+	// * load words, separating special and non-special
+	specialWords, nonSpecialWords := loadAndSeparateWords(pogreb)
 
-	// * load all words from database
-	words := loadAllWords(pogreb)
-	fmt.Printf("    loaded %d words from database\n", len(words))
+	fmt.Printf("    loaded %d total words (%d special, %d non-special)\n",
+		len(specialWords)+len(nonSpecialWords), len(specialWords), len(nonSpecialWords))
 
-	if len(words) <= targetWords {
-		fmt.Printf("already at target (%d words)\n", len(words))
-		reassignSequentialTokens(pogreb, apply)
+	if len(nonSpecialWords) <= targetWords {
+		fmt.Printf("non-special words already at target (%d words)\n", len(nonSpecialWords))
+		// * only reassign non-special tokens, keep special tokens unchanged
+		reassignNonSpecialTokensOnly(pogreb, specialWords, nonSpecialWords, apply)
 		return
 	}
 
-	// * step 1: character truncation
-	words = applyCharacterTruncation(words, pogreb, apply)
+	// * step 1: character truncation (non-special only)
+	nonSpecialWords = applyCharacterTruncation(nonSpecialWords, pogreb, apply)
 
-	// * step 2: remove long words
-	words = removeLongWords(words, pogreb, apply)
+	// * step 2: remove long words (non-special only)
+	nonSpecialWords = removeLongWords(nonSpecialWords, pogreb, apply)
 
-	// * step 3: remove low frequency words
-	words = removeLowFrequencyWords(words, pogreb, apply)
+	// * step 3: remove low frequency words (non-special only)
+	nonSpecialWords = removeLowFrequencyWords(nonSpecialWords, pogreb, apply)
 
-	// * step 4: subword extraction
-	if len(words) > targetWords {
-		steps := performSubwordExtraction(words, targetWords)
+	// * step 4: subword extraction (non-special only)
+	if len(nonSpecialWords) > targetWords {
+		steps := performSubwordExtraction(nonSpecialWords, targetWords)
 		if apply && len(steps) > 0 {
 			applyExtractionSteps(pogreb, constructor, steps)
 		}
+		// * reload non-special words after extraction
+		_, nonSpecialWords = loadAndSeparateWords(pogreb)
 	}
 
-	// * step 5: sequential reassignment (always runs as cleanup)
-	reassignSequentialTokens(pogreb, apply)
+	// * step 5: reassign only non-special tokens, keep special tokens unchanged
+	reassignNonSpecialTokensOnly(pogreb, specialWords, nonSpecialWords, apply)
 }
 
-// * verify database integrity and count duplicates
-func verifyDatabaseIntegrity(pogreb *pogreb.Pogreb) int {
-	var words []wordData
+// * load all words from database, separating special and non-special
+func loadAndSeparateWords(pogreb *pogreb.Pogreb) (specialWords []wordData, nonSpecialWords []wordData) {
+	specialMap := make(map[string]wordData)
+	nonSpecialMap := make(map[string]wordData)
 	it := pogreb.WordMapper.Items()
 
 	for {
@@ -120,51 +119,55 @@ func verifyDatabaseIntegrity(pogreb *pogreb.Pogreb) int {
 
 		word := string(key)
 		isSpecial, tokenNo, count := util.MapperPayloadExtract(value)
-		words = append(words, wordData{
+		wd := wordData{
 			word:      word,
 			tokenNo:   tokenNo,
 			count:     count,
 			isSpecial: isSpecial,
-		})
-	}
+		}
 
-	// * check for duplicate words
-	wordMap := make(map[string]int)
-	duplicateCount := 0
-	for _, wd := range words {
-		if _, exists := wordMap[wd.word]; exists {
-			duplicateCount++
+		if isSpecial {
+			// * handle special words - preserve first occurrence, merge duplicates
+			if existing, exists := specialMap[word]; exists {
+				// * merge counts but preserve original token and special flag
+				merged := wordData{
+					word:      word,
+					tokenNo:   existing.tokenNo,
+					count:     existing.count + count,
+					isSpecial: true,
+				}
+				specialMap[word] = merged
+			} else {
+				specialMap[word] = wd
+			}
 		} else {
-			wordMap[wd.word] = 1
+			// * handle non-special words - keep highest count
+			if existing, exists := nonSpecialMap[word]; exists {
+				if wd.count > existing.count {
+					nonSpecialMap[word] = wd
+				}
+			} else {
+				nonSpecialMap[word] = wd
+			}
 		}
 	}
 
-	return duplicateCount
+	// * convert maps to slices
+	for _, wd := range specialMap {
+		specialWords = append(specialWords, wd)
+	}
+	for _, wd := range nonSpecialMap {
+		nonSpecialWords = append(nonSpecialWords, wd)
+	}
+
+	fmt.Printf("loaded %d special words and %d non-special words\n", len(specialWords), len(nonSpecialWords))
+	return specialWords, nonSpecialWords
 }
 
-// * load all words from database with their metadata
+// * legacy function for compatibility
 func loadAllWords(pogreb *pogreb.Pogreb) []wordData {
-	var words []wordData
-	it := pogreb.WordMapper.Items()
-
-	for {
-		key, value, err := it.Next()
-		if err != nil {
-			break
-		}
-
-		word := string(key)
-		isSpecial, tokenNo, count := util.MapperPayloadExtract(value)
-
-		words = append(words, wordData{
-			word:      word,
-			tokenNo:   tokenNo,
-			count:     count,
-			isSpecial: isSpecial,
-		})
-	}
-
-	return words
+	specialWords, nonSpecialWords := loadAndSeparateWords(pogreb)
+	return append(specialWords, nonSpecialWords...)
 }
 
 // * truncate consecutive characters (3+ -> 1)
@@ -174,6 +177,12 @@ func applyCharacterTruncation(words []wordData, pogreb *pogreb.Pogreb, apply boo
 
 	// * identify words needing truncation
 	for _, wd := range words {
+		// * skip special words
+		if wd.isSpecial {
+			result = append(result, wd)
+			continue
+		}
+
 		truncated := truncateConsecutiveChars(wd.word)
 		if truncated != wd.word {
 			truncationMap[wd.word] = truncated
@@ -189,13 +198,34 @@ func applyCharacterTruncation(words []wordData, pogreb *pogreb.Pogreb, apply boo
 	}
 
 	// * add truncated words
-	for _, truncated := range truncationMap {
-		result = append(result, wordData{
-			word:      truncated,
-			tokenNo:   0, // * will be reassigned later
-			count:     0, // * will be updated later
-			isSpecial: false,
-		})
+	for original, truncated := range truncationMap {
+		// * find the original word data to preserve special flag and count
+		var originalData wordData
+		found := false
+		for _, wd := range words {
+			if wd.word == original {
+				originalData = wd
+				found = true
+				break
+			}
+		}
+
+		if found {
+			result = append(result, wordData{
+				word:      truncated,
+				tokenNo:   0, // * will be reassigned later
+				count:     originalData.count,
+				isSpecial: originalData.isSpecial,
+			})
+		} else {
+			// * fallback
+			result = append(result, wordData{
+				word:      truncated,
+				tokenNo:   0,
+				count:     0,
+				isSpecial: false,
+			})
+		}
 	}
 
 	// * apply changes to database
@@ -287,6 +317,12 @@ func removeLongWords(words []wordData, pogreb *pogreb.Pogreb, apply bool) []word
 
 	// * identify long words
 	for _, wd := range words {
+		// * skip special words
+		if wd.isSpecial {
+			filteredWords = append(filteredWords, wd)
+			continue
+		}
+
 		if len(wd.word) > maxWordLength {
 			longWords = append(longWords, wd)
 		} else {
@@ -332,6 +368,12 @@ func removeLowFrequencyWords(words []wordData, pogreb *pogreb.Pogreb, apply bool
 
 	// * identify low frequency words
 	for _, wd := range words {
+		// * skip special words entirely - no modifications allowed
+		if wd.isSpecial {
+			filteredWords = append(filteredWords, wd)
+			continue
+		}
+
 		if wd.count < uint64(minWordCount) {
 			lowFreqWords = append(lowFreqWords, wd)
 		} else {
@@ -683,65 +725,56 @@ func splitWordBySubword(pogreb *pogreb.Pogreb, constructor constructor.Server, w
 	return nil
 }
 
-// * reassign sequential token numbers to eliminate gaps
+// * reassign sequential token numbers to eliminate gaps (legacy function)
 func reassignSequentialTokens(pogreb *pogreb.Pogreb, apply bool) {
-	fmt.Printf("\n=== reassigning sequential token numbers ===\n")
+	specialWords, nonSpecialWords := loadAndSeparateWords(pogreb)
+	reassignNonSpecialTokensOnly(pogreb, specialWords, nonSpecialWords, apply)
+}
 
-	// * load all current words
-	words := loadAllWords(pogreb)
-	fmt.Printf("loaded %d total words\n", len(words))
+// * reassign only non-special tokens, keeping special tokens unchanged
+func reassignNonSpecialTokensOnly(pogreb *pogreb.Pogreb, specialWords []wordData, nonSpecialWords []wordData, apply bool) {
+	fmt.Printf("\n=== reassigning non-special tokens (preserving %d special tokens) ===\n", len(specialWords))
 
-	// * remove duplicates - keep highest count for each word
-	wordMap := make(map[string]wordData)
-	duplicateCount := 0
-	for _, wd := range words {
-		if existing, exists := wordMap[wd.word]; exists {
-			// * keep the one with higher count
-			if wd.count > existing.count {
-				wordMap[wd.word] = wd
-			}
-			duplicateCount++
-		} else {
-			wordMap[wd.word] = wd
-		}
-	}
-
-	if duplicateCount > 0 {
-		fmt.Printf("removed %d duplicate words, keeping %d unique words\n", duplicateCount, len(wordMap))
-	}
-
-	// * convert back to slice and sort by original token order
-	uniqueWords := make([]wordData, 0, len(wordMap))
-	for _, wd := range wordMap {
-		uniqueWords = append(uniqueWords, wd)
-	}
-
-	sort.Slice(uniqueWords, func(i, j int) bool {
-		return uniqueWords[i].tokenNo < uniqueWords[j].tokenNo
+	// * sort non-special words by original token order
+	sort.Slice(nonSpecialWords, func(i, j int) bool {
+		return nonSpecialWords[i].tokenNo < nonSpecialWords[j].tokenNo
 	})
 
+	// * find next available token number after highest special token
+	maxSpecialToken := uint64(0)
+	for _, wd := range specialWords {
+		if wd.tokenNo > maxSpecialToken {
+			maxSpecialToken = wd.tokenNo
+		}
+	}
+	nextAvailableToken := maxSpecialToken
+
+	fmt.Printf("preserving %d special tokens with highest token: %d\n", len(specialWords), maxSpecialToken)
+	fmt.Printf("reassigning %d non-special tokens starting from %d\n", len(nonSpecialWords), nextAvailableToken+1)
+
 	if !apply {
-		fmt.Printf("dry run: would reassign %d unique words to positions 1-%d\n", len(uniqueWords), len(uniqueWords))
+		fmt.Printf("dry run: would reassign %d non-special words to positions %d-%d\n",
+			len(nonSpecialWords), nextAvailableToken+1, nextAvailableToken+uint64(len(nonSpecialWords)))
 		return
 	}
 
-	// * delete all existing mappings
-	fmt.Printf("clearing all existing mappings...\n")
-	for _, wd := range words {
+	// * delete existing non-special mappings only
+	fmt.Printf("clearing non-special mappings...\n")
+	for _, wd := range nonSpecialWords {
 		pogreb.TokenMapper.Delete(util.Uint64ToBytes(wd.tokenNo))
 		pogreb.WordMapper.Delete([]byte(wd.word))
 	}
 
-	// * reassign all tokens sequentially for unique words only
-	fmt.Printf("reassigning tokens sequentially...\n")
+	// * reassign non-special tokens sequentially
+	fmt.Printf("reassigning non-special tokens sequentially...\n")
 	successCount := 0
-	for i, wd := range uniqueWords {
-		newTokenNo := uint64(i + 1)
+	for i, wd := range nonSpecialWords {
+		newTokenNo := nextAvailableToken + uint64(i+1)
 
-		// * update word mapper
-		newPayload := util.MapperPayloadBuild(wd.isSpecial, newTokenNo, wd.count)
+		// * update word mapper (keep isSpecial=false)
+		newPayload := util.MapperPayloadBuild(false, newTokenNo, wd.count)
 		if err := pogreb.WordMapper.Put([]byte(wd.word), newPayload); err != nil {
-			log.Printf("error updating word '%s': %v", wd.word, err)
+			log.Printf("error updating non-special word '%s': %v", wd.word, err)
 			continue
 		}
 
@@ -755,27 +788,19 @@ func reassignSequentialTokens(pogreb *pogreb.Pogreb, apply bool) {
 
 		// * progress indicator
 		if (i+1)%1000 == 0 {
-			fmt.Printf("progress: %d/%d unique words reassigned...\n", i+1, len(uniqueWords))
+			fmt.Printf("progress: %d/%d non-special words reassigned...\n", i+1, len(nonSpecialWords))
 		}
 	}
 
-	// * verify the result
-	maxToken := uint64(0)
-	verifyWords := loadAllWords(pogreb)
-	for _, wd := range verifyWords {
-		if wd.tokenNo > maxToken {
-			maxToken = wd.tokenNo
+	// * verify special tokens are preserved
+	fmt.Printf("\nnon-special token reassignment complete:\n")
+	fmt.Printf("- successfully reassigned %d non-special words\n", successCount)
+	fmt.Printf("- preserved %d special tokens unchanged\n", len(specialWords))
+
+	// * verify some special tokens
+	for _, wd := range specialWords {
+		if wd.word == "." || wd.word == "..." || len(wd.word) == 1 && !((wd.word[0] >= 'a' && wd.word[0] <= 'z') || (wd.word[0] >= 'A' && wd.word[0] <= 'Z')) {
+			fmt.Printf("- preserved special word '%s' with token %d\n", wd.word, wd.tokenNo)
 		}
-	}
-
-	fmt.Printf("\nsequential reassignment complete:\n")
-	fmt.Printf("- successfully reassigned %d unique words\n", successCount)
-	fmt.Printf("- final word count: %d\n", len(verifyWords))
-	fmt.Printf("- final range: 1 to %d\n", maxToken)
-
-	if maxToken == uint64(len(verifyWords)) {
-		fmt.Printf("    all gaps eliminated!\n")
-	} else {
-		fmt.Printf("    gaps still exist (expected: %d, actual: %d)\n", len(verifyWords), maxToken)
 	}
 }
