@@ -152,7 +152,7 @@ class Loader:
                     pass
 
 
-# initialize loader
+# * initialize loader
 def create_loader():
     loader = Loader()
 

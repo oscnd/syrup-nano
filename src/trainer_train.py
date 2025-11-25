@@ -1,6 +1,5 @@
 """
-Training script for GPT model on custom JSONL code dataset.
-Supports both single GPU and distributed data parallel (DDP) training.
+Training script
 
 To run on a single GPU:
 $ python train.py --batch_size=32 --compile=False
@@ -13,17 +12,12 @@ import os
 import time
 import math
 import pickle
-import json
-import glob
 from contextlib import nullcontext
 import numpy as np
 import torch
 from torch.nn.parallel import DistributedDataParallel
 from torch.distributed import init_process_group, destroy_process_group
 from trainer_model import Config, Module
-from nano import Nano
-from word import WordEncodeResult
-from loader import create_loader
 
 # configuration
 out_dir = '.local/output'
@@ -75,101 +69,7 @@ device = 'cuda'
 dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16'
 compilation = True
 
-
-# * data preparation function
-def prepare_data():
-    # check if data already exists
-    train_file = os.path.join(out_dir, 'train.bin')
-    val_file = os.path.join(out_dir, 'val.bin')
-    meta_file = os.path.join(out_dir, 'meta.pkl')
-
-    if os.path.exists(train_file) and os.path.exists(val_file) and os.path.exists(meta_file):
-        print(f"data already prepared in {out_dir}")
-        return out_dir
-
-    print(f"preparing data from loader...")
-    os.makedirs(out_dir, exist_ok=True)
-
-    # create loader
-    loader = create_loader()
-
-    if len(loader) == 0:
-        raise ValueError("no data found in loader")
-
-    # initialize tokenizer
-    nano = Nano()
-    time.sleep(1)
-
-    # read and tokenize all data
-    all_tokens = []
-    processed_count = 0
-
-    print(f"processing {len(loader)} entries...")
-
-    while True:
-        result = loader.get()
-        if result is None:
-            break
-
-        metadata, content = result
-
-        if processed_count % 1000 == 0:
-            print(f"  processed {processed_count}/{len(loader)} entries...")
-
-        try:
-            if content:
-                result = nano.encode(content)
-                parsed = WordEncodeResult(result)
-                tokens = parsed.to_token_list()
-                all_tokens.extend(tokens)
-                processed_count += 1
-
-                if debug:
-                    print(f"  content: {content[:30]!r}... => {tokens} (total tokens: {len(tokens)})")
-        except Exception as e:
-            print(f"  error processing {metadata}: {e}")
-            continue
-
-    print(f"\ntotal entries processed: {processed_count:,}")
-    print(f"total tokens: {len(all_tokens):,}")
-
-    # convert to numpy array
-    all_tokens = np.array(all_tokens, dtype=np.uint32)
-
-    # calculate vocab size
-    vocab_size = int(np.max(all_tokens)) + 1
-    print(f"vocabulary size: {vocab_size:,}")
-
-    # split into train and validation
-    split_idx = int(len(all_tokens) * train_split)
-    train_tokens = all_tokens[:split_idx]
-    val_tokens = all_tokens[split_idx:]
-
-    print(f"train tokens: {len(train_tokens):,}")
-    print(f"validation tokens: {len(val_tokens):,}")
-
-    # save to binary files
-    train_tokens.tofile(train_file)
-    val_tokens.tofile(val_file)
-
-    # save metadata
-    meta = {
-        'vocab_size': vocab_size,
-        'train_size': len(train_tokens),
-        'val_size': len(val_tokens),
-    }
-
-    with open(meta_file, 'wb') as file:
-        pickle.dump(meta, file)
-
-    print(f"data preparation saved to {out_dir}")
-    return out_dir
-
-
-# prepare data first
-prepare_data()
-
-# various inits, derived attributes, I/O setup
+# various inits, derived attributes, i/o setup
 ddp = int(os.environ.get('RANK', -1)) != -1
 if ddp:
     init_process_group(backend=backend)
@@ -204,9 +104,9 @@ ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=
 # data loader
 def get_batch(split):
     if split == 'train':
-        data = np.memmap(os.path.join(out_dir, 'train.bin'), dtype=np.uint32, mode='r')
+        data = np.memmap(os.path.join(out_dir, 'train.bin'), dtype=np.uint16, mode='r')
     else:
-        data = np.memmap(os.path.join(out_dir, 'val.bin'), dtype=np.uint32, mode='r')
+        data = np.memmap(os.path.join(out_dir, 'val.bin'), dtype=np.uint16, mode='r')
     ix = torch.randint(len(data) - block_size, (batch_size,))
     x = torch.stack([torch.from_numpy((data[i:i + block_size]).astype(np.int64)) for i in ix])
     y = torch.stack([torch.from_numpy((data[i + 1:i + 1 + block_size]).astype(np.int64)) for i in ix])
