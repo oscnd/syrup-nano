@@ -53,6 +53,19 @@ func invoke(shutdowner fx.Shutdowner, pogreb *pogreb.Pogreb) {
 		log.Println(key)
 	}
 
+	it = pogreb.TokenMapper.Items()
+	for {
+		key, val, err := it.Next()
+		if errors.Is(err, pogreb2.ErrIterationDone) {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("%d: %s\n", util.BytesToUint64(key), string(val))
+	}
+
 	log.Println("max:", max)
 
 	_ = shutdowner.Shutdown()
