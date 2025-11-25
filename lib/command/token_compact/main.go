@@ -701,6 +701,13 @@ func reassignNonSpecialTokensOnly(pogreb *pogreb.Pogreb, specialWords []wordData
 	fmt.Printf("clearing all token mappings for clean reset...\n")
 	clearAllTokenMappings(pogreb)
 
+	fmt.Printf("restoring special word token mappings...\n")
+	for _, wd := range specialWords {
+		if err := pogreb.TokenMapper.Put(util.Uint64ToBytes(wd.tokenNo), []byte(wd.word)); err != nil {
+			log.Printf("error restoring special word token mapping %d -> %s: %v", wd.tokenNo, wd.word, err)
+		}
+	}
+
 	fmt.Printf("reassigning non-special tokens sequentially...\n")
 	successCount := 0
 	for i, wd := range nonSpecialWords {
