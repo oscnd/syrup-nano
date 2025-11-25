@@ -12,7 +12,7 @@ from loader import create_loader
 # * configuration
 OUT_DIR = '.local/output'
 TRAIN_SPLIT = 0.9
-CHUNK_SIZE = 1_048_576
+CHUNK_SIZE = 16_777_216
 DEBUG = False
 
 def prepare_data_chunked():
