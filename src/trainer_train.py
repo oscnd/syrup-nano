@@ -192,7 +192,6 @@ if wandb_log and master_process:
     wandb.init(project=wandb_project, name=wandb_run_name, config=None)
 
 # training loop
-X, Y = get_batch('train')
 t0 = time.time()
 local_iter_num = 0
 raw_model = model.module if ddp else model
@@ -237,10 +236,10 @@ while True:
         if ddp:
             model.require_backward_grad_sync = (micro_step == gradient_accumulation_steps - 1)
         with ctx:
+            X, Y = get_batch('train')
             logits, loss = model(X, Y)
             loss = loss / gradient_accumulation_steps
-        X, Y = get_batch('train')
-        scaler.scale(loss).backward()
+            scaler.scale(loss).backward()
 
     # clip gradients
     if grad_clip != 0.0:
