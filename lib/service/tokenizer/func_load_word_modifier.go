@@ -21,6 +21,19 @@ func (r *Service) LoadWordModifier() {
 		enum.WordModifier[key] = tokenNo
 		fmt.Printf("loaded modifier %s with tokenNo: %d\n", modifierName, tokenNo)
 	}
+	// loop through word sections
+	for key := range enum.WordSection {
+		modifierName := string(key)
+		value, err := r.pogreb.WordMapper.Get([]byte(modifierName))
+		if err != nil || value == nil {
+			fmt.Printf("section %s not found in pogreb\n", modifierName)
+			continue
+		}
+
+		_, tokenNo, _ := util.MapperPayloadExtract(value)
+		enum.WordSection[key] = tokenNo
+		fmt.Printf("loaded section %s with tokenNo: %d\n", modifierName, tokenNo)
+	}
 
 	// loop through word suffix
 	for key := range enum.WordSuffix {

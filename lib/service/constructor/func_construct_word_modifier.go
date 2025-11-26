@@ -9,6 +9,12 @@ func (r *Service) ConstructWordModifier() {
 		enum.WordModifier[key] = r.No
 	}
 
+	// * process word section
+	for key := range enum.WordSection {
+		r.ProcessWord(string(key), true)
+		enum.WordSection[key] = r.No
+	}
+
 	// * process word suffix
 	for key := range enum.WordSuffix {
 		r.ProcessWord(string(key), true)
