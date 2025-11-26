@@ -28,6 +28,6 @@ var WordSection = map[WordSectionType]uint64{
 
 func init() {
 	for i := range 1024 {
-		WordSection[WordSectionType(fmt.Sprintf("#sectionTemplate%3d", i))] = uint64(0)
+		WordSection[WordSectionType(fmt.Sprintf("#sectionTemplate%04d", i))] = uint64(0)
 	}
 }
