@@ -18,16 +18,14 @@ import torch
 from torch.nn.parallel import DistributedDataParallel
 from torch.distributed import init_process_group, destroy_process_group
 from trainer_model import Config, Module
-from loader import create_loader
-from nano import Nano
+from loader_xenarcai_codex import create_loader
 
 # * configuration
 out_dir = '.local/output'
-eval_interval = 500
-log_interval = 100
-eval_iters = 200
+eval_interval = 1024
+log_interval = 1024
 eval_only = False
-always_save_checkpoint = False
+always_save_checkpoint = True
 init_from = 'scratch'
 debug = False
 
@@ -37,9 +35,9 @@ wandb_project = 'nano'
 wandb_run_name = 'nano-run'
 
 # * data
-gradient_accumulation_steps = 2
-batch_size = 32
-block_size = 256
+gradient_accumulation_steps = 8
+batch_size = 6
+block_size = 6144
 
 # * baby gpt model
 n_layer = 6
@@ -98,7 +96,7 @@ ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=
 
 
 # * data loader
-def get_batch(split, loader):
+def get_batch(loader):
     """get a batch from loader - one get() call per batch item"""
     x_list = []
     y_list = []
@@ -144,23 +142,21 @@ def get_batch(split, loader):
 
 # * initialize loaders
 if master_process:
-    print("initializing codex loaders...")
-train_loader = create_loader()
-val_loader = create_loader()
+    print("initializing loaders...")
+loader = create_loader()
 
 # * init these up here
 iter_num = 0
 best_val_loss = 1e9
 
-# * get vocab size from nano tokenizer
-nano = Nano()
-meta_vocab_size = nano.get_num()
+# * get vocab size
+meta_vocab_size = loader.nano.get_num()
 
 if master_process:
     print(f"using vocab_size {meta_vocab_size}")
 
 # * calculate max_iters based on dataset size
-total_train_sequences = len(train_loader)
+total_train_sequences = loader.total_items
 sequences_per_iter = gradient_accumulation_steps * ddp_world_size * batch_size
 max_iters = total_train_sequences // sequences_per_iter
 lr_decay_iters = max_iters
@@ -206,9 +202,8 @@ def estimate_loss():
     out = {}
     model.eval()
     for split in ['train', 'val']:
-        losses = torch.zeros(eval_iters)
-        loader = train_loader if split == 'train' else val_loader
-        for k in range(eval_iters):
+        losses = torch.zeros(eval_interval)
+        for k in range(eval_interval):
             X, Y = get_batch(split, loader)
             with ctx:
                 logits, loss = model(X, Y)
@@ -253,7 +248,8 @@ while True:
 
     # * evaluate and save checkpoints
     if iter_num % eval_interval == 0 and master_process:
-        losses = estimate_loss()
+        # losses = estimate_loss()
+        losses = {'train': 0.0, 'val': 0.0}
         print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
         if wandb_log:
             wandb.log({
@@ -284,7 +280,7 @@ while True:
         if ddp:
             model.require_backward_grad_sync = (micro_step == gradient_accumulation_steps - 1)
         with ctx:
-            X, Y = get_batch('train', train_loader)
+            X, Y = get_batch(loader)
             logits, loss = model(X, Y)
             loss = loss / gradient_accumulation_steps
             scaler.scale(loss).backward()

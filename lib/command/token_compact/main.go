@@ -84,9 +84,10 @@ func CompactTokens(pogreb *pogreb.Pogreb, constructor constructor.Server, apply 
 		if apply && len(steps) > 0 {
 			applyExtractionSteps(pogreb, constructor, steps)
 		}
-		_, nonSpecialWords = loadAndSeparateWords(pogreb)
 	}
 
+	// Reload both special and non-special words after all modifications
+	specialWords, nonSpecialWords = loadAndSeparateWords(pogreb)
 	reassignNonSpecialTokensOnly(pogreb, specialWords, nonSpecialWords, apply)
 }
 
@@ -581,12 +582,15 @@ func applyExtractionSteps(pogreb *pogreb.Pogreb, constructor constructor.Server,
 	currentCount := len(loadAllWords(pogreb))
 	totalReduction := 0
 
+	// Track current maximum token number to avoid gaps
+	currentMaxToken := getCurrentMaxToken(pogreb)
+
 	for i, step := range steps {
 		fmt.Printf("applying step %d: extract '%s' (len=%d)\n", i+1, step.subword, len(step.subword))
 
 		removedCount := 0
 		for _, word := range step.parentWords {
-			err := splitWordBySubword(pogreb, constructor, word, step.subword)
+			err := splitWordBySubwordWithMax(pogreb, word, step.subword, &currentMaxToken)
 			if err != nil {
 				log.Printf("error splitting word '%s': %v", word, err)
 			} else {
@@ -609,6 +613,62 @@ func applyExtractionSteps(pogreb *pogreb.Pogreb, constructor constructor.Server,
 	fmt.Printf("total reduction: %d (%.1f%%)\n", totalReduction,
 		float64(totalReduction)/float64(len(loadAllWords(pogreb)))*100)
 	fmt.Printf("final word count: %d\n", currentCount)
+}
+
+func getCurrentMaxToken(pogreb *pogreb.Pogreb) uint64 {
+	it := pogreb.WordMapper.Items()
+	maxToken := uint64(0)
+
+	for {
+		_, value, err := it.Next()
+		if err != nil {
+			break
+		}
+		if value == nil {
+			continue
+		}
+
+		_, tokenNo, _ := util.MapperPayloadExtract(value)
+		if tokenNo > maxToken {
+			maxToken = tokenNo
+		}
+	}
+
+	return maxToken
+}
+
+func splitWordBySubwordWithMax(pogreb *pogreb.Pogreb, word, subword string, currentMaxToken *uint64) error {
+	value, err := pogreb.WordMapper.Get([]byte(word))
+	if err != nil || value == nil {
+		return fmt.Errorf("word not found: %s", word)
+	}
+
+	_, tokenNo, count := util.MapperPayloadExtract(value)
+
+	pogreb.TokenMapper.Delete(util.Uint64ToBytes(tokenNo))
+	pogreb.WordMapper.Delete([]byte(word))
+
+	parts := strings.Split(word, subword)
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+
+		existing, _ := pogreb.WordMapper.Get([]byte(part))
+		if existing != nil {
+			_, existingTokenNo, existingCount := util.MapperPayloadExtract(existing)
+			newPayload := util.MapperPayloadBuild(false, existingTokenNo, existingCount+count)
+			pogreb.WordMapper.Put([]byte(part), newPayload)
+		} else {
+			*currentMaxToken++
+			newTokenNo := *currentMaxToken
+			newPayload := util.MapperPayloadBuild(false, newTokenNo, count)
+			pogreb.WordMapper.Put([]byte(part), newPayload)
+			pogreb.TokenMapper.Put(util.Uint64ToBytes(newTokenNo), []byte(part))
+		}
+	}
+
+	return nil
 }
 
 func splitWordBySubword(pogreb *pogreb.Pogreb, constructor constructor.Server, word, subword string) error {
@@ -712,6 +772,9 @@ func reassignNonSpecialTokensOnly(pogreb *pogreb.Pogreb, specialWords []wordData
 	successCount := 0
 	for i, wd := range nonSpecialWords {
 		newTokenNo := nextAvailableToken + uint64(i+1)
+
+		// Delete old word entry to prevent duplicates
+		pogreb.WordMapper.Delete([]byte(wd.word))
 
 		newPayload := util.MapperPayloadBuild(false, newTokenNo, wd.count)
 		if err := pogreb.WordMapper.Put([]byte(wd.word), newPayload); err != nil {
