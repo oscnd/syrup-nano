@@ -4,6 +4,8 @@ Loader constructor for building dataset cache with pluggable processors
 
 import os
 import json
+import time
+
 import numpy as np
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -232,11 +234,9 @@ class LoaderConstructor:
         index_mode = 'ab' if progress else 'wb'
 
         with open(self.data_file, data_mode) as data_f, open(self.index_file, index_mode) as index_f:
-            chunk_tokens = []
             chunk_size = 16_777_216
-
+            chunk_tokens = []
             index_buffer = []
-            index_buffer_size = 10000
 
             for dataset_idx, dataset_name in enumerate(dataset_names):
                 # * check if we should skip this dataset (already completed)
@@ -291,6 +291,11 @@ class LoaderConstructor:
                     if skip_count > 0:
                         print(f"resuming from sequence {skip_count:,}...")
                         print(f"skipping first {skip_count:,} sequences...")
+
+                # * time performance
+                t0 = time.perf_counter()
+                ps0 = processed_sequences
+                pt0 = total_tokens
 
                 for row in dataset:
                     # * skip already processed sequences
@@ -349,8 +354,15 @@ class LoaderConstructor:
                             self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
 
                             # * print progress
+                            delta_t = time.perf_counter() - t0
+                            delta_sequences = (processed_sequences - ps0) / delta_t
+                            delta_tokens = (total_tokens - pt0) / delta_t
+                            t0 = time.perf_counter()
+                            ps0 = processed_sequences
+                            pt0 = total_tokens
                             print(
-                                f"  processed {processed_sequences:,}/{dataset_total_sequences:,} sequences, {total_tokens:,} tokens...")
+                                f"  processed {processed_sequences:,}/{dataset_total_sequences:,} ({(delta_sequences):,.2f} seq/s) sequences, {total_tokens} ({delta_tokens :,.2f} tokens/s"
+                            )
 
                     except Exception as e:
                         print(f"error processing row {processed_sequences} from {dataset_name}: {e}")
