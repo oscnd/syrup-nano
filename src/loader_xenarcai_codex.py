@@ -90,24 +90,22 @@ class Loader:
         total_tokens = 0
         max_token_value = 0
         sequence_indices = []  # store starting index of each sequence
-        dataset_metadata = []  # store dataset info with start sequence index
+        dataset_metadata = []  # store dataset info
 
         with open(temp_file, 'wb') as temp_f:
             chunk_tokens = []
             chunk_size = 16_777_216
 
             for dataset_name in dataset_names:
-                dataset = load_dataset(dataset_name, split='train')
-                dataset_size = len(dataset)
+                dataset = load_dataset(dataset_name, split='train', streaming=True)
                 dataset_start_seq = len(sequence_indices)
 
-                print(f"\nprocessing dataset: {dataset_name} with {dataset_size:,} sequences")
+                print(f"processing dataset: {dataset_name}")
 
-                processed_in_dataset = 0
+                processed_sequence = 0
 
-                for row_idx in range(dataset_size):
+                for row in dataset:
                     try:
-                        row = dataset[row_idx]
                         tokens = self._process_row(row)
 
                         if tokens is None:
@@ -118,14 +116,14 @@ class Loader:
 
                         chunk_tokens.extend(tokens.tolist())
                         total_tokens += len(tokens)
-                        processed_in_dataset += 1
+                        processed_sequence += 1
 
                         # * track max token value
                         if len(tokens) > 0:
                             max_token_value = max(max_token_value, int(tokens.max()))
 
-                        if processed_in_dataset % 1000 == 0:
-                            print(f"  processed {processed_in_dataset:,} sequences, {total_tokens:,} tokens...")
+                        if processed_sequence % 1000 == 0:
+                            print(f"  processed {processed_sequence:,} sequences, {total_tokens:,} tokens...")
 
                         # * flush chunk to disk
                         if len(chunk_tokens) >= chunk_size:
@@ -134,7 +132,7 @@ class Loader:
                             chunk_tokens = []
 
                     except Exception as e:
-                        print(f"error processing row {row_idx} from {dataset_name}: {e}")
+                        print(f"error processing row {processed_sequence} from {dataset_name}: {e}")
                         continue
 
                 # * save dataset metadata
@@ -142,10 +140,9 @@ class Loader:
                     'name': dataset_name,
                     'start_sequence_idx': dataset_start_seq,
                     'num_sequences': len(sequence_indices) - dataset_start_seq,
-                    'original_size': dataset_size
                 })
 
-                print(f"completed {dataset_name}: {processed_in_dataset:,} sequences")
+                print(f"completed {dataset_name}: {processed_sequence:,} sequences")
 
             # * write remaining tokens
             if chunk_tokens:
