@@ -2,6 +2,7 @@
 Main entrypoint for loading datasets with automatic cache construction
 """
 
+import argparse
 from loader import Loader, DatasetIncompleteError
 from loader_constructor import LoaderConstructor
 from loader_process_xenarcai_codex import XenarcaiCodexProcessor
@@ -61,12 +62,26 @@ def create_loader(dataset_names: list[str], cache_dir: str = '.local/cache') -> 
 
 
 if __name__ == "__main__":
-    # * test with xenarcai codex datasets
-    dataset_names = [
-        "XenArcAI/CodeX-7M-Non-Thinking",
-    ]
+    parser = argparse.ArgumentParser(description='Load datasets with cache construction')
+    parser.add_argument(
+        '--dataset-names',
+        type=str,
+        default='XenArcAI/CodeX-7M-Non-Thinking',
+        help='Comma-separated list of dataset names (default: XenArcAI/CodeX-7M-Non-Thinking)'
+    )
+    parser.add_argument(
+        '--cache-dir',
+        type=str,
+        default='.local/cache',
+        help='Directory for cached data (default: .local/cache)'
+    )
 
-    loader = load(dataset_names)
+    args = parser.parse_args()
+
+    # * parse comma-separated dataset names
+    dataset_names = [name.strip() for name in args.dataset_names.split(',')]
+
+    loader = load(dataset_names, cache_dir=args.cache_dir)
 
     print(f"\nloader ready: {len(loader):,} total tokens")
     print(f"  train sequences: {loader.num_sequences('train'):,}")

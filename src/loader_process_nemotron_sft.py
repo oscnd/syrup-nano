@@ -12,9 +12,13 @@ from loader_constructor import LoaderConstructorProcessor
 class NemotronSftProcessor(LoaderConstructorProcessor):
     """Processor for leonli66/nemotron-sft datasets"""
 
-    def can_process(self, dataset_name: str) -> bool:
+    def check(self, dataset_name: str) -> bool:
         """Check if dataset name starts with leonli66/nemotron-sft-"""
         return dataset_name.startswith("leonli66/nemotron-sft-")
+
+    def subsets(self) -> list[str]:
+        """Return list of subsets"""
+        return ["nonthinking", "thinking"]
 
     def should_filter(self) -> bool:
         """Filter needed"""

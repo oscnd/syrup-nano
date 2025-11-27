@@ -11,9 +11,13 @@ from loader_constructor import LoaderConstructorProcessor
 class XenarcaiCodexProcessor(LoaderConstructorProcessor):
     """Processor for XenArcAI/CodeX datasets"""
 
-    def can_process(self, dataset_name: str) -> bool:
+    def check(self, dataset_name: str) -> bool:
         """Check if dataset name starts with XenArcAI/CodeX-"""
         return dataset_name.startswith("XenArcAI/CodeX-")
+
+    def subsets(self) -> list[str]:
+        """Return subsets for the dataset"""
+        return []
 
     def should_filter(self) -> bool:
         """No filtering needed"""

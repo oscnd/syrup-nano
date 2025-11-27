@@ -22,22 +22,13 @@ class LoaderConstructorProcessor(ABC):
         self.section_markers = section_markers
 
     @abstractmethod
-    def can_process(self, dataset_name: str) -> bool:
+    def check(self, dataset_name: str) -> bool:
         """Check if this processor can handle the given dataset name"""
         pass
 
     @abstractmethod
-    def process_row(self, row: dict, dataset_name: str) -> Optional[np.ndarray]:
-        """
-        Process a single row and return tokens
-
-        Args:
-            row: The dataset row
-            dataset_name: Full dataset name for context
-
-        Returns:
-            numpy array of uint16 tokens or None if row should be skipped
-        """
+    def subsets(self) -> list[str]:
+        """Return list of dataset subsets this processor can handle"""
         pass
 
     @abstractmethod
@@ -60,6 +51,20 @@ class LoaderConstructorProcessor(ABC):
 
         Returns:
             True if row should be kept, False if it should be filtered out
+        """
+        pass
+
+    @abstractmethod
+    def process_row(self, row: dict, dataset_name: str) -> Optional[np.ndarray]:
+        """
+        Process a single row and return tokens
+
+        Args:
+            row: The dataset row
+            dataset_name: Full dataset name for context
+
+        Returns:
+            numpy array of uint16 tokens or None if row should be skipped
         """
         pass
 
@@ -128,7 +133,7 @@ class LoaderConstructor:
     def _find_processor(self, dataset_name: str) -> Optional[LoaderConstructorProcessor]:
         """Find a processor that can handle the given dataset"""
         for processor in self.processors:
-            if processor.can_process(dataset_name):
+            if processor.check(dataset_name):
                 return processor
         return None
 
@@ -251,153 +256,175 @@ class LoaderConstructor:
                     print(f"ERROR: no processor for {dataset_name}, skipping")
                     continue
 
+                # * get subsets for this processor
+                processor_subsets = processor.subsets()
+
+                # * if no subsets, process without subset parameter
+                if len(processor_subsets) == 0:
+                    subsets = [None]
+                else:
+                    subsets = processor_subsets
+
                 print(f"loading dataset: {dataset_name}")
+                if len(subsets) > 0:
+                    print(f"  subsets: {subsets}")
 
-                # * load dataset without streaming to get total length
-                dataset = load_dataset(dataset_name, split='train')
+                # * process each subset (or process once without subset if empty)
+                for subset in subsets:
+                    # * construct full dataset identifier
+                    if subset is not None:
+                        dataset_full_name = f"{dataset_name}:{subset}"
+                        print(f"\nprocessing subset: {subset}")
+                    else:
+                        dataset_full_name = dataset_name
 
-                # * apply filter if processor requires it
-                if processor.should_filter():
-                    print(f"  applying filter...")
-                    try:
-                        dataset = dataset.filter(processor.filter)
+                    # * load dataset with or without subset parameter
+                    if subset is not None:
+                        dataset = load_dataset(dataset_name, subset, split='train')
+                    else:
+                        dataset = load_dataset(dataset_name, split='train')
+
+                    # * apply filter if processor requires it
+                    if processor.should_filter():
+                        print(f"  applying filter...")
+                        try:
+                            dataset = dataset.filter(processor.filter)
+                            dataset_total_sequences = len(dataset)
+                            print(f"  after filter: {dataset_total_sequences:,} rows")
+                        except Exception as e:
+                            print(f"  warning: filter failed for {dataset_full_name}: {e}")
+                            dataset_total_sequences = len(dataset)
+                    else:
                         dataset_total_sequences = len(dataset)
-                        print(f"  after filter: {dataset_total_sequences:,} rows")
-                    except Exception as e:
-                        print(f"  warning: filter failed for {dataset_name}: {e}")
-                        dataset_total_sequences = len(dataset)
-                else:
-                    dataset_total_sequences = len(dataset)
 
-                print(f"dataset total sequences: {dataset_total_sequences:,}")
-                print(f"processing dataset: {dataset_name}")
+                    print(f"dataset total sequences: {dataset_total_sequences:,}")
 
-                # * determine start sequence index for this dataset
-                # if resuming, use the metadata from cache
-                # otherwise, use current full_sequences
-                if dataset_idx < len(dataset_metadata):
-                    # resuming this dataset - use existing metadata
-                    dataset_start_seq = dataset_metadata[dataset_idx]['start_sequence_idx']
-                else:
-                    # new dataset - use current full_sequences
-                    dataset_start_seq = full_sequences
+                    # * determine start sequence index for this dataset
+                    # if resuming, use the metadata from cache
+                    # otherwise, use current full_sequences
+                    if dataset_idx < len(dataset_metadata):
+                        # resuming this dataset - use existing metadata
+                        dataset_start_seq = dataset_metadata[dataset_idx]['start_sequence_idx']
+                    else:
+                        # new dataset - use current full_sequences
+                        dataset_start_seq = full_sequences
 
-                processed_sequences = 0
+                    processed_sequences = 0
 
-                # * if resuming current dataset, skip already processed sequences
-                skip_count = 0
-                if dataset_idx == resume_dataset_idx and dataset_idx < len(dataset_metadata):
-                    skip_count = dataset_metadata[dataset_idx].get('processed_sequences', 0)
-                    if skip_count > 0:
-                        print(f"resuming from sequence {skip_count:,}...")
-                        print(f"skipping first {skip_count:,} sequences...")
+                    # * if resuming current dataset, skip already processed sequences
+                    skip_count = 0
+                    if dataset_idx == resume_dataset_idx and dataset_idx < len(dataset_metadata):
+                        skip_count = dataset_metadata[dataset_idx].get('processed_sequences', 0)
+                        if skip_count > 0:
+                            print(f"resuming from sequence {skip_count:,}...")
+                            print(f"skipping first {skip_count:,} sequences...")
 
-                # * time performance
-                t0 = time.perf_counter()
-                ps0 = processed_sequences
-                pt0 = total_tokens
+                    # * time performance
+                    t0 = time.perf_counter()
+                    ps0 = processed_sequences
+                    pt0 = total_tokens
 
-                for row in dataset:
-                    # * skip already processed sequences
-                    if processed_sequences < skip_count:
-                        processed_sequences += 1
-                        continue
-
-                    try:
-                        tokens = processor.process_row(row, dataset_name)
-
-                        if tokens is None:
+                    for row in dataset:
+                        # * skip already processed sequences
+                        if processed_sequences < skip_count:
+                            processed_sequences += 1
                             continue
 
-                        # * add tokens to chunk buffer
-                        chunk_tokens.extend(tokens.tolist())
+                        try:
+                            tokens = processor.process_row(row, dataset_full_name)
 
-                        # * add index to index buffer (points to where this sequence starts)
-                        index_buffer.append(total_tokens)
+                            if tokens is None:
+                                continue
 
-                        # * update counters
-                        total_tokens += len(tokens)
-                        full_sequences += 1
-                        processed_sequences += 1
+                            # * add tokens to chunk buffer
+                            chunk_tokens.extend(tokens.tolist())
 
-                        # * track max token value
-                        if len(tokens) > 0:
-                            max_token_value = max(max_token_value, int(tokens.max()))
+                            # * add index to index buffer (points to where this sequence starts)
+                            index_buffer.append(total_tokens)
 
-                        # * flush chunk to disk and save progress
-                        if len(chunk_tokens) >= chunk_size:
-                            # * write data chunk
-                            chunk_array = np.array(chunk_tokens, dtype=np.uint16)
-                            chunk_array.tofile(data_f)
-                            chunk_tokens = []
+                            # * update counters
+                            total_tokens += len(tokens)
+                            full_sequences += 1
+                            processed_sequences += 1
 
-                            # * write index buffer
-                            if index_buffer:
-                                index_array = np.array(index_buffer, dtype=np.uint64)
-                                index_array.tofile(index_f)
-                                index_buffer = []
+                            # * track max token value
+                            if len(tokens) > 0:
+                                max_token_value = max(max_token_value, int(tokens.max()))
 
-                            # * update or add current dataset metadata
-                            current_ds_meta = {
-                                'name': dataset_name,
-                                'start_sequence_idx': dataset_start_seq,
-                                'total_sequences': dataset_total_sequences,
-                                'processed_sequences': processed_sequences
-                            }
+                            # * flush chunk to disk and save progress
+                            if len(chunk_tokens) >= chunk_size:
+                                # * write data chunk
+                                chunk_array = np.array(chunk_tokens, dtype=np.uint16)
+                                chunk_array.tofile(data_f)
+                                chunk_tokens = []
 
-                            if dataset_idx == len(dataset_metadata):
-                                dataset_metadata.append(current_ds_meta)
-                            else:
-                                dataset_metadata[dataset_idx] = current_ds_meta
+                                # * write index buffer
+                                if index_buffer:
+                                    index_array = np.array(index_buffer, dtype=np.uint64)
+                                    index_array.tofile(index_f)
+                                    index_buffer = []
 
-                            # * save progress to disk
-                            self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
+                                # * update or add current dataset metadata
+                                current_ds_meta = {
+                                    'name': dataset_full_name,
+                                    'start_sequence_idx': dataset_start_seq,
+                                    'total_sequences': dataset_total_sequences,
+                                    'processed_sequences': processed_sequences
+                                }
 
-                            # * print progress
-                            delta_t = time.perf_counter() - t0
-                            delta_sequences = (processed_sequences - ps0) / delta_t
-                            delta_tokens = (total_tokens - pt0) / delta_t
-                            t0 = time.perf_counter()
-                            ps0 = processed_sequences
-                            pt0 = total_tokens
-                            print(
-                                f"  processed {processed_sequences:,}/{dataset_total_sequences:,} ({delta_sequences :,.2f}/s) sequences, {total_tokens} ({delta_tokens :,.2f}/s) tokens"
-                            )
+                                if dataset_idx == len(dataset_metadata):
+                                    dataset_metadata.append(current_ds_meta)
+                                else:
+                                    dataset_metadata[dataset_idx] = current_ds_meta
 
-                    except Exception as e:
-                        print(f"error processing row {processed_sequences} from {dataset_name}: {e}")
-                        continue
+                                # * save progress to disk
+                                self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
 
-                # * after finishing dataset, flush any remaining data and save final state
-                # * write remaining tokens for this dataset
-                if chunk_tokens:
-                    chunk_array = np.array(chunk_tokens, dtype=np.uint16)
-                    chunk_array.tofile(data_f)
-                    chunk_tokens = []
+                                # * print progress
+                                delta_t = time.perf_counter() - t0
+                                delta_sequences = (processed_sequences - ps0) / delta_t
+                                delta_tokens = (total_tokens - pt0) / delta_t
+                                t0 = time.perf_counter()
+                                ps0 = processed_sequences
+                                pt0 = total_tokens
+                                print(
+                                    f"  processed {processed_sequences:,}/{dataset_total_sequences:,} ({delta_sequences :,.2f}/s) sequences, {total_tokens} ({delta_tokens :,.2f}/s) tokens"
+                                )
 
-                # * write remaining indices for this dataset
-                if index_buffer:
-                    index_array = np.array(index_buffer, dtype=np.uint64)
-                    index_array.tofile(index_f)
-                    index_buffer = []
+                        except Exception as e:
+                            print(f"error processing row {processed_sequences} from {dataset_full_name}: {e}")
+                            continue
 
-                # * save dataset metadata with final count
-                current_ds_meta = {
-                    'name': dataset_name,
-                    'start_sequence_idx': dataset_start_seq,
-                    'total_sequences': dataset_total_sequences,
-                    'processed_sequences': processed_sequences
-                }
+                    # * after finishing dataset, flush any remaining data and save final state
+                    # * write remaining tokens for this dataset
+                    if chunk_tokens:
+                        chunk_array = np.array(chunk_tokens, dtype=np.uint16)
+                        chunk_array.tofile(data_f)
+                        chunk_tokens = []
 
-                if dataset_idx == len(dataset_metadata):
-                    dataset_metadata.append(current_ds_meta)
-                else:
-                    dataset_metadata[dataset_idx] = current_ds_meta
+                    # * write remaining indices for this dataset
+                    if index_buffer:
+                        index_array = np.array(index_buffer, dtype=np.uint64)
+                        index_array.tofile(index_f)
+                        index_buffer = []
 
-                # * save progress after completing dataset
-                self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
+                    # * save dataset metadata with final count
+                    current_ds_meta = {
+                        'name': dataset_full_name,
+                        'start_sequence_idx': dataset_start_seq,
+                        'total_sequences': dataset_total_sequences,
+                        'processed_sequences': processed_sequences
+                    }
 
-                print(f"completed {dataset_name}: {processed_sequences:,}/{dataset_total_sequences:,} sequences")
+                    if dataset_idx == len(dataset_metadata):
+                        dataset_metadata.append(current_ds_meta)
+                    else:
+                        dataset_metadata[dataset_idx] = current_ds_meta
+
+                    # * save progress after completing dataset
+                    self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
+
+                    print(f"completed {dataset_full_name}: {processed_sequences:,}/{dataset_total_sequences:,} sequences")
 
             # * final writes at end of all datasets (should be empty if datasets completed properly)
             # * write any remaining tokens
