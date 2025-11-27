@@ -1,6 +1,7 @@
 """
 loader class for dataset XenArcAI/CodeX-*
 stores all data in single files with dynamic train/test split
+with resume capability
 """
 
 import os
@@ -35,43 +36,76 @@ class Loader:
         self.current_train_idx = 0
         self.current_val_idx = 0
 
-        # * define section markers as tokens
-        self.section_markers = {
-            '#sectionInstructionStart#': [0],
-            '#sectionTemplate1#': [0],
-            '#sectionInstructionEnd#': [0],
-            '#sectionInputStart#': [0],
-            '#sectionInputEnd#': [0],
-            '#sectionThinkingStart#': [0],
-            '#sectionThinkingEnd#': [0],
-            '#sectionOutputStart#': [0],
-            '#sectionOutputEnd#': [0],
-        }
+        # * section markers (will be initialized)
+        self.section_markers = {}
 
-        # * encode section markers
-        for marker in self.section_markers.keys():
+        # * initialize
+        self._initialize_markers()
+        self._initialize_cache()
+
+    def _initialize_markers(self):
+        """initialize and encode section markers"""
+        marker_names = [
+            '#sectionInstructionStart#',
+            '#sectionTemplate1#',
+            '#sectionInstructionEnd#',
+            '#sectionInputStart#',
+            '#sectionInputEnd#',
+            '#sectionThinkingStart#',
+            '#sectionThinkingEnd#',
+            '#sectionOutputStart#',
+            '#sectionOutputEnd#',
+        ]
+
+        for marker in marker_names:
             result = self.nano.encode(marker)
             parsed = WordEncodeResult(result)
             self.section_markers[marker] = parsed.to_token_list()
 
-        # * initialize: check for cached files or create them
-        self._initialize()
-
-    def _initialize(self):
+    def _initialize_cache(self):
         """check if cached files exist, if not create them"""
         cache_exists = (
-            os.path.exists(self.data_file) and
-            os.path.exists(self.index_file) and
-            os.path.exists(self.index_json_file)
+                os.path.exists(self.data_file) and
+                os.path.exists(self.index_file) and
+                os.path.exists(self.index_json_file)
         )
 
         if cache_exists:
-            print(f"loading cached data from {self.cache_dir}")
-            self.cache_load()
+            # * check if cache is complete
+            with open(self.index_json_file, 'r') as f:
+                info = json.load(f)
+                if info.get('complete', False):
+                    print(f"loading cached data from {self.cache_dir}")
+                    self.cache_load()
+                else:
+                    print(f"incomplete cache found, resuming construction...")
+                    self.cache_construct()
+                    self.cache_load()
         else:
             print(f"no cached data found, creating cache in {self.cache_dir}")
             self.cache_construct()
             self.cache_load()
+
+    def _save_progress(self, dataset_metadata, total_sequences, total_tokens, max_token_value, complete=False):
+        """save progress to index.json"""
+        with open(self.index_json_file, 'w') as f:
+            json.dump({
+                'datasets': dataset_metadata,
+                'total_sequences': total_sequences,
+                'total_tokens': total_tokens,
+                'vocab_size': max_token_value + 1,
+                'train_split': self.train_split,
+                'complete': complete
+            }, f, indent=2)
+
+    def _load_progress(self):
+        """load progress from index.json if exists"""
+        if os.path.exists(self.index_json_file):
+            with open(self.index_json_file, 'r') as f:
+                progress = json.load(f)
+                if not progress.get('complete', False):
+                    return progress
+        return None
 
     def cache_construct(self):
         """encode datasets and flush to binary files"""
@@ -83,28 +117,76 @@ class Loader:
             "XenArcAI/CodeX-7M-Non-Thinking"
         ]
 
-        # * temporary file for all tokens
-        temp_file = os.path.join(self.cache_dir, 'temp.bin')
+        # * check for resume
+        progress = self._load_progress()
+
+        if progress:
+            print(f"resuming from previous progress...")
+            total_tokens = progress['total_tokens']
+            max_token_value = progress['vocab_size'] - 1
+            dataset_metadata = progress['datasets']
+
+            # * calculate total sequences from metadata
+            total_sequences = sum(ds['num_sequences'] for ds in dataset_metadata)
+
+            # * determine which dataset to resume from
+            resume_dataset_idx = len(dataset_metadata)
+            if resume_dataset_idx > 0:
+                last_ds = dataset_metadata[-1]
+                resume_from = last_ds.get('processed_sequence_idx', 0)
+                print(f"last dataset: {last_ds['name']}, processed {resume_from} sequences")
+
+            if resume_dataset_idx >= len(dataset_names):
+                print("all datasets already processed, marking as complete")
+                self._save_progress(dataset_metadata, total_sequences, total_tokens, max_token_value, complete=True)
+                return
+        else:
+            print("starting fresh...")
+            total_tokens = 0
+            max_token_value = 0
+            total_sequences = 0
+            dataset_metadata = []
+            resume_dataset_idx = 0
 
         print("writing tokens...")
-        total_tokens = 0
-        max_token_value = 0
-        sequence_indices = []  # store starting index of each sequence
-        dataset_metadata = []  # store dataset info
 
-        with open(temp_file, 'wb') as temp_f:
+        # * open files in append mode if resuming, write mode if starting fresh
+        data_mode = 'ab' if progress else 'wb'
+        index_mode = 'ab' if progress else 'wb'
+
+        with open(self.data_file, data_mode) as data_f, open(self.index_file, index_mode) as index_f:
             chunk_tokens = []
-            chunk_size = 16_777_216
+            chunk_size = 1_000_000
 
-            for dataset_name in dataset_names:
+            index_buffer = []
+            index_buffer_size = 10000
+
+            for dataset_idx, dataset_name in enumerate(dataset_names):
+                # * skip already completed datasets
+                if dataset_idx < resume_dataset_idx:
+                    print(f"skipping completed dataset: {dataset_name}")
+                    continue
+
                 dataset = load_dataset(dataset_name, split='train', streaming=True)
-                dataset_start_seq = len(sequence_indices)
+                dataset_start_seq = total_sequences
 
                 print(f"processing dataset: {dataset_name}")
 
                 processed_sequence = 0
 
+                # * if resuming current dataset, skip already processed sequences
+                skip_count = 0
+                if dataset_idx == resume_dataset_idx and progress and len(dataset_metadata) > 0:
+                    skip_count = dataset_metadata[-1].get('processed_sequence_idx', 0)
+                    if skip_count > 0:
+                        print(f"skipping first {skip_count} sequences...")
+
                 for row in dataset:
+                    # * skip already processed sequences
+                    if processed_sequence < skip_count:
+                        processed_sequence += 1
+                        continue
+
                     try:
                         tokens = self._process_row(row)
 
@@ -112,10 +194,17 @@ class Loader:
                             continue
 
                         # * record starting index of this sequence
-                        sequence_indices.append(total_tokens)
+                        index_buffer.append(total_tokens)
+
+                        # * flush index buffer if needed
+                        if len(index_buffer) >= index_buffer_size:
+                            index_array = np.array(index_buffer, dtype=np.uint64)
+                            index_array.tofile(index_f)
+                            index_buffer = []
 
                         chunk_tokens.extend(tokens.tolist())
                         total_tokens += len(tokens)
+                        total_sequences += 1
                         processed_sequence += 1
 
                         # * track max token value
@@ -125,83 +214,80 @@ class Loader:
                         if processed_sequence % 1000 == 0:
                             print(f"  processed {processed_sequence:,} sequences, {total_tokens:,} tokens...")
 
-                        # * flush chunk to disk
+                        # * flush chunk to disk and save progress
                         if len(chunk_tokens) >= chunk_size:
                             chunk_array = np.array(chunk_tokens, dtype=np.uint16)
-                            chunk_array.tofile(temp_f)
+                            chunk_array.tofile(data_f)
                             chunk_tokens = []
+
+                            # * update or add current dataset metadata
+                            current_ds_meta = {
+                                'name': dataset_name,
+                                'start_sequence_idx': dataset_start_seq,
+                                'num_sequences': total_sequences - dataset_start_seq,
+                                'processed_sequence_idx': processed_sequence
+                            }
+
+                            if dataset_idx == len(dataset_metadata):
+                                dataset_metadata.append(current_ds_meta)
+                            else:
+                                dataset_metadata[dataset_idx] = current_ds_meta
+
+                            # * save progress
+                            self._save_progress(dataset_metadata, total_sequences, total_tokens, max_token_value, complete=False)
 
                     except Exception as e:
                         print(f"error processing row {processed_sequence} from {dataset_name}: {e}")
                         continue
 
-                # * save dataset metadata
-                dataset_metadata.append({
+                # * save dataset metadata with final count
+                current_ds_meta = {
                     'name': dataset_name,
                     'start_sequence_idx': dataset_start_seq,
-                    'num_sequences': len(sequence_indices) - dataset_start_seq,
-                })
+                    'num_sequences': total_sequences - dataset_start_seq,
+                    'processed_sequence_idx': processed_sequence
+                }
+
+                if dataset_idx == len(dataset_metadata):
+                    dataset_metadata.append(current_ds_meta)
+                else:
+                    dataset_metadata[dataset_idx] = current_ds_meta
 
                 print(f"completed {dataset_name}: {processed_sequence:,} sequences")
 
             # * write remaining tokens
             if chunk_tokens:
                 chunk_array = np.array(chunk_tokens, dtype=np.uint16)
-                chunk_array.tofile(temp_f)
+                chunk_array.tofile(data_f)
 
-        print(f"\ntotal sequences processed: {len(sequence_indices):,}")
+            # * write remaining indices
+            if index_buffer:
+                index_array = np.array(index_buffer, dtype=np.uint64)
+                index_array.tofile(index_f)
+
+        print(f"\ntotal sequences processed: {total_sequences:,}")
         print(f"total tokens: {total_tokens:,}")
 
         # * calculate vocab size
         vocab_size = max_token_value + 1
         print(f"vocabulary size: {vocab_size:,}")
 
-        # * load all tokens and write to data.bin
-        print("writing data.bin...")
-        all_tokens = np.memmap(temp_file, dtype=np.uint16, mode='r', shape=(total_tokens,))
-        data_tokens = np.memmap(self.data_file, dtype=np.uint16, mode='w+', shape=(total_tokens,))
-        data_tokens[:] = all_tokens[:]
-        data_tokens.flush()
-        del data_tokens
-        del all_tokens
+        # * mark as complete
+        self._save_progress(dataset_metadata, total_sequences, total_tokens, max_token_value, complete=True)
 
-        # * write index.bin
-        print("writing index.bin...")
-        indices_array = np.array(sequence_indices, dtype=np.uint64)
-        indices_array.tofile(self.index_file)
-
-        # * write index.json
-        print("writing index.json...")
-        with open(self.index_json_file, 'w') as f:
-            json.dump({
-                'datasets': dataset_metadata,
-                'total_sequences': len(sequence_indices),
-                'total_tokens': total_tokens,
-                'vocab_size': vocab_size,
-                'train_split': self.train_split
-            }, f, indent=2)
-
-        # * cleanup
-        print("cleaning up temporary files...")
-        os.remove(temp_file)
-
-        print(f"cache construction saved to {self.cache_dir}")
+        print(f"cache construction completed and saved to {self.cache_dir}")
 
     def cache_load(self):
         """load memory-mapped arrays from cached files"""
-        # * load data.bin
-        data_size = os.path.getsize(self.data_file) // 2  # 2 bytes per uint16
-        self.data = np.memmap(self.data_file, dtype=np.uint16, mode='r', shape=(data_size,))
-
-        # * load index.bin
-        index_size = os.path.getsize(self.index_file) // 8  # 8 bytes per uint64
-        self.indices = np.memmap(self.index_file, dtype=np.uint64, mode='r', shape=(index_size,))
+        # * load memmap
+        self.data = np.memmap(self.data_file, dtype=np.uint16, mode='r')
+        self.indices = np.memmap(self.index_file, dtype=np.uint64, mode='r')
 
         # * load index.json
         with open(self.index_json_file, 'r') as f:
             self.dataset_info = json.load(f)
 
-        print(f"loaded cache: {data_size:,} tokens, {index_size:,} sequences")
+        print(f"loaded cache: {len(self.data):,} tokens, {len(self.indices):,} sequences")
         print(f"datasets: {len(self.dataset_info['datasets'])}")
         for ds in self.dataset_info['datasets']:
             print(f"  - {ds['name']}: {ds['num_sequences']:,} sequences")
@@ -445,24 +531,25 @@ if __name__ == "__main__":
     print("creating loader...")
     loader = create_loader()
 
-    print("\ntesting first 3 sequences from train split:")
+    print("\ntesting first 3 sequences each split:")
     for i in range(3):
-        tokens = loader.get(split='train')
-        if tokens is not None:
+        t = loader.get(split='train')
+        if t is not None:
             print(f"\nsequence {i + 1}:")
-            print(f"  token count: {len(tokens):,}")
-            print(f"  first 50 tokens: {tokens[:50]}")
-            print(f"  token dtype: {tokens.dtype}")
+            print(f"  token count: {len(t):,}")
+            print(f"  first 50 tokens: {t[:50]}")
+            print(f"  token dtype: {t.dtype}")
         else:
             print(f"\nsequence {i + 1}: no more data")
             break
 
     for i in range(3):
-        tokens = loader.get(split='val')
-        if tokens is not None:
+        t = loader.get(split='val')
+        if t is not None:
             print(f"\nsequence {i + 1}:")
-            print(f"  token count: {len(tokens):,}")
-            print(f"  first 50 tokens: {tokens[:50]}")
+            print(f"  token count: {len(t):,}")
+            print(f"  first 50 tokens: {t[:50]}")
+            print(f"  token dtype: {t.dtype}")
         else:
             print(f"\nsequence {i + 1}: no more data")
             break
