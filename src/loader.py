@@ -52,15 +52,24 @@ class Loader:
         """Validate that cache exists and contains all required datasets"""
         # * check if cache files exist
         if not os.path.exists(self.index_json_file):
-            raise DatasetIncompleteError("Cache not found - no index.json exists")
+            raise DatasetIncompleteError("no cache index.json exists")
 
         # * load and check index.json
         with open(self.index_json_file, 'r') as f:
             info = json.load(f)
 
-        # * check if cache is complete
-        if not info.get('complete', False):
-            raise DatasetIncompleteError("Cache construction incomplete")
+        # * check if cache is complete by comparing all datasets
+        incomplete_datasets = []
+        for ds in info.get('datasets', []):
+            processed = ds.get('processed_sequences', 0)
+            total = ds.get('total_sequences', 0)
+            if processed < total:
+                incomplete_datasets.append(ds['name'])
+
+        if incomplete_datasets:
+            raise DatasetIncompleteError(
+                f"cache construction incomplete. incomplete datasets: {', '.join(incomplete_datasets)}"
+            )
 
         # * check if all required datasets are present
         cached_datasets = {ds['name'] for ds in info.get('datasets', [])}
@@ -69,24 +78,24 @@ class Loader:
         missing = required_datasets - cached_datasets
         if missing:
             raise DatasetIncompleteError(
-                f"Missing datasets in cache: {', '.join(missing)}"
+                f"missing datasets in cache: {', '.join(missing)}"
             )
 
-        # * check if any cached dataset is incomplete
+        # * check if any cached dataset is incomplete (already checked above, but double-check for required ones)
         for ds in info.get('datasets', []):
             if ds['name'] in required_datasets:
                 processed = ds.get('processed_sequences', 0)
                 total = ds.get('total_sequences', 0)
                 if processed < total:
                     raise DatasetIncompleteError(
-                        f"Dataset '{ds['name']}' is incomplete: {processed}/{total} sequences"
+                        f"dataset '{ds['name']}' is incomplete: {processed}/{total} sequences"
                     )
 
         # * check if binary files exist
         if not os.path.exists(self.data_file):
-            raise DatasetIncompleteError("Missing data.bin file")
+            raise DatasetIncompleteError("missing data.bin file")
         if not os.path.exists(self.index_file):
-            raise DatasetIncompleteError("Missing index.bin file")
+            raise DatasetIncompleteError("missing index.bin file")
 
     def _load_cache(self):
         """Load memory-mapped arrays from cached files"""
@@ -135,8 +144,7 @@ class Loader:
             'total_sequences': len(self.filtered_train_indices) + len(self.filtered_val_indices),
             'total_tokens': full_dataset_info['total_tokens'],
             'vocab_size': full_dataset_info['vocab_size'],
-            'train_split': self.train_split,
-            'complete': full_dataset_info['complete']
+            'train_split': self.train_split
         }
 
         print(f"loaded cache: {len(self.data):,} total tokens in cache")

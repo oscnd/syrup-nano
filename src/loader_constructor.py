@@ -130,7 +130,7 @@ class LoaderConstructor:
                 return processor
         return None
 
-    def _save_progress(self, dataset_metadata, full_sequences, total_tokens, max_token_value, complete=False):
+    def _save_progress(self, dataset_metadata, full_sequences, total_tokens, max_token_value):
         """Save progress to index.json"""
         with open(self.index_json_file, 'w') as f:
             json.dump({
@@ -138,8 +138,7 @@ class LoaderConstructor:
                 'full_sequences': full_sequences,
                 'total_tokens': total_tokens,
                 'vocab_size': max_token_value + 1,
-                'train_split': self.train_split,
-                'complete': complete
+                'train_split': self.train_split
             }, f, indent=2)
 
     def _load_progress(self):
@@ -147,7 +146,16 @@ class LoaderConstructor:
         if os.path.exists(self.index_json_file):
             with open(self.index_json_file, 'r') as f:
                 progress = json.load(f)
-                if not progress.get('complete', False):
+
+                # * check if all datasets are complete
+                all_complete = True
+                for ds in progress.get('datasets', []):
+                    if ds.get('processed_sequences', 0) < ds.get('total_sequences', 0):
+                        all_complete = False
+                        break
+
+                # * only return progress if not all complete
+                if not all_complete:
                     return progress
         return None
 
@@ -206,8 +214,8 @@ class LoaderConstructor:
                 resume_dataset_idx = len(dataset_metadata)
 
             if resume_dataset_idx >= len(dataset_names):
-                print("all datasets already processed, marking as complete")
-                self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value, complete=True)
+                print("all datasets already processed")
+                self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
                 return
         else:
             print("starting fresh...")
@@ -311,7 +319,11 @@ class LoaderConstructor:
                         if len(tokens) > 0:
                             max_token_value = max(max_token_value, int(tokens.max()))
 
+                        if processed_sequences % 1000 == 0:
+                            print(f"  processed {processed_sequences:,}/{dataset_total_sequences:,} sequences, {total_tokens:,} tokens...")
+
                         # * flush chunk to disk and save progress
+                        # CRITICAL: flush both data and indices together for state consistency
                         if len(chunk_tokens) >= chunk_size:
                             # * write data chunk
                             chunk_array = np.array(chunk_tokens, dtype=np.uint16)
@@ -338,12 +350,7 @@ class LoaderConstructor:
                                 dataset_metadata[dataset_idx] = current_ds_meta
 
                             # * save progress to disk
-                            self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value,
-                                                complete=False)
-
-                            print(
-                                f"  processed {processed_sequences:,}/{dataset_total_sequences:,} sequences, {total_tokens:,} tokens...")
-
+                            self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
 
                     except Exception as e:
                         print(f"error processing row {processed_sequences} from {dataset_name}: {e}")
@@ -376,7 +383,7 @@ class LoaderConstructor:
                     dataset_metadata[dataset_idx] = current_ds_meta
 
                 # * save progress after completing dataset
-                self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value, complete=False)
+                self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
 
                 print(f"completed {dataset_name}: {processed_sequences:,}/{dataset_total_sequences:,} sequences")
 
@@ -400,7 +407,7 @@ class LoaderConstructor:
         vocab_size = max_token_value + 1
         print(f"vocabulary size: {vocab_size:,}")
 
-        # * mark as complete
-        self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value, complete=True)
+        # * save final progress
+        self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
 
         print(f"cache construction completed and saved to {self.cache_dir}")
