@@ -361,7 +361,7 @@ class LoaderConstructor:
                             ps0 = processed_sequences
                             pt0 = total_tokens
                             print(
-                                f"  processed {processed_sequences:,}/{dataset_total_sequences:,} ({(delta_sequences):,.2f} seq/s) sequences, {total_tokens} ({delta_tokens :,.2f} tokens/s"
+                                f"  processed {processed_sequences:,}/{dataset_total_sequences:,} ({delta_sequences :,.2f}/s) sequences, {total_tokens} ({delta_tokens :,.2f}/s) tokens"
                             )
 
                     except Exception as e:
