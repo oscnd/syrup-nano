@@ -22,11 +22,14 @@ class Nano:
         self.lib.load.argtypes = []
         self.lib.load.restype = None
 
+        self.lib.free_cstring.argtypes = [ctypes.c_void_p]
+        self.lib.free_cstring.restype = None
+
         self.lib.encode.argtypes = [ctypes.c_char_p]
-        self.lib.encode.restype = ctypes.c_char_p
+        self.lib.encode.restype = ctypes.c_void_p
 
         self.lib.decode.argtypes = [ctypes.c_ulonglong]
-        self.lib.decode.restype = ctypes.c_char_p
+        self.lib.decode.restype = ctypes.c_void_p
 
         self.lib.get_num.argtypes = []
         self.lib.get_num.restype = ctypes.c_ulonglong
@@ -54,10 +57,13 @@ class Nano:
         c_text = ctypes.create_string_buffer(text.encode('utf-8'))
 
         # call encode function
-        result = self.lib.encode(c_text)
+        result_ptr = self.lib.encode(c_text)
 
         # convert c string result to python string
-        result_str = ctypes.string_at(result).decode('utf-8')
+        result_str = ctypes.cast(result_ptr, ctypes.c_char_p).value.decode('utf-8')
+
+        # free c string
+        self.lib.free_cstring(result_ptr)
 
         try:
             # parse json result
@@ -70,10 +76,13 @@ class Nano:
         c_token = ctypes.c_ulonglong(token)
 
         # call decode function
-        result = self.lib.decode(c_token)
+        result_ptr = self.lib.decode(c_token)
 
         # convert c string result to python string
-        result_str = ctypes.string_at(result).decode('utf-8')
+        result_str = ctypes.cast(result_ptr, ctypes.c_char_p).value.decode('utf-8')
+
+        # free c string
+        self.lib.free_cstring(result_ptr)
 
         return result_str
 

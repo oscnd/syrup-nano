@@ -1,9 +1,13 @@
 package main
 
+/*
+   #include <stdlib.h>
+*/
 import "C"
 
 import (
 	"encoding/json"
+	"unsafe"
 
 	"go.scnd.dev/open/syrup/nano/lib/common/config"
 	"go.scnd.dev/open/syrup/nano/lib/common/fxo"
@@ -65,6 +69,11 @@ func encode(text *C.char) *C.char {
 func decode(token C.ulonglong) *C.char {
 	result := app.Tokenizer.Decode(uint64(token))
 	return C.CString(result)
+}
+
+//export free_cstring
+func free_cstring(str *C.char) {
+	C.free(unsafe.Pointer(str))
 }
 
 //export get_num
