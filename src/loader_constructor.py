@@ -233,7 +233,7 @@ class LoaderConstructor:
 
         with open(self.data_file, data_mode) as data_f, open(self.index_file, index_mode) as index_f:
             chunk_tokens = []
-            chunk_size = 1_000_000
+            chunk_size = 16_777_216
 
             index_buffer = []
             index_buffer_size = 10000
@@ -319,11 +319,7 @@ class LoaderConstructor:
                         if len(tokens) > 0:
                             max_token_value = max(max_token_value, int(tokens.max()))
 
-                        if processed_sequences % 1000 == 0:
-                            print(f"  processed {processed_sequences:,}/{dataset_total_sequences:,} sequences, {total_tokens:,} tokens...")
-
                         # * flush chunk to disk and save progress
-                        # CRITICAL: flush both data and indices together for state consistency
                         if len(chunk_tokens) >= chunk_size:
                             # * write data chunk
                             chunk_array = np.array(chunk_tokens, dtype=np.uint16)
@@ -351,6 +347,10 @@ class LoaderConstructor:
 
                             # * save progress to disk
                             self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value)
+
+                            # * print progress
+                            print(
+                                f"  processed {processed_sequences:,}/{dataset_total_sequences:,} sequences, {total_tokens:,} tokens...")
 
                     except Exception as e:
                         print(f"error processing row {processed_sequences} from {dataset_name}: {e}")
