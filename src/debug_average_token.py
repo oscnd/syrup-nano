@@ -178,6 +178,7 @@ class Loader:
                 self.current_idx += 1
 
                 # * process row
+                print(f"characters counted: {len(row.get('input', '')) + len(row.get('output', '')):,} from {current_ds['name']} idx {current_ds['current_idx'] - 1}")
                 tokens = self._process_row(row)
 
                 if tokens is not None:
@@ -221,6 +222,7 @@ if __name__ == "__main__":
 
     print("\ntesting first 3 rows:")
     sum = 0
+    sum_characters = 0
     for i in range(192):
         tokens = loader.get()
         if tokens is not None:

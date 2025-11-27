@@ -63,8 +63,7 @@ def create_loader(dataset_names: list[str], cache_dir: str = '.local/cache') -> 
 if __name__ == "__main__":
     # * test with xenarcai codex datasets
     dataset_names = [
-        "XenArcAI/CodeX-2M-Thinking",
-        "XenArcAI/CodeX-7M-Non-Thinking"
+        "XenArcAI/CodeX-7M-Non-Thinking",
     ]
 
     loader = load(dataset_names)
