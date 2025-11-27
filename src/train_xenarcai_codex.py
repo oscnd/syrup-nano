@@ -18,7 +18,7 @@ import torch
 from torch.nn.parallel import DistributedDataParallel
 from torch.distributed import init_process_group, destroy_process_group
 from trainer_model import Config, Module
-from loader_xenarcai_codex import create_loader
+from loader_process_xenarcai_codex import create_loader
 
 # * configuration
 out_dir = '.local/output'
