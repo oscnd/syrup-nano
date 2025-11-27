@@ -15,8 +15,12 @@ class XenarcaiCodexProcessor(LoaderConstructorProcessor):
         """Check if dataset name starts with XenArcAI/CodeX-"""
         return dataset_name.startswith("XenArcAI/CodeX-")
 
-    def should_filter(self, row: dict) -> bool:
-        """No filtering needed for CodeX datasets"""
+    def should_filter(self) -> bool:
+        """No filtering needed"""
+        return False
+
+    def filter(self, row: dict) -> bool:
+        """No filtering needed for each row"""
         return True
 
     def _extract_language(self, output: str) -> Optional[str]:

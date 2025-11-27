@@ -16,7 +16,11 @@ class NemotronSftProcessor(LoaderConstructorProcessor):
         """Check if dataset name starts with leonli66/nemotron-sft-"""
         return dataset_name.startswith("leonli66/nemotron-sft-")
 
-    def should_filter(self, row: dict) -> bool:
+    def should_filter(self) -> bool:
+        """Filter needed"""
+        return True
+
+    def filter(self, row: dict) -> bool:
         """Filter for multiturn=false only"""
         return row.get('is_multiturn', True) == False
 

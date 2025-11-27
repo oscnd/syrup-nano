@@ -75,8 +75,8 @@ class Loader:
         # * check if any cached dataset is incomplete
         for ds in info.get('datasets', []):
             if ds['name'] in required_datasets:
-                processed = ds.get('processed_sequence_idx', 0)
-                total = ds.get('num_sequences', 0)
+                processed = ds.get('processed_sequences', 0)
+                total = ds.get('total_sequences', 0)
                 if processed < total:
                     raise DatasetIncompleteError(
                         f"Dataset '{ds['name']}' is incomplete: {processed}/{total} sequences"
@@ -111,11 +111,11 @@ class Loader:
 
         for ds in filtered_datasets:
             start_seq = ds['start_sequence_idx']
-            num_seqs = ds['num_sequences']
+            processed_seqs = ds['processed_sequences']
 
             # * calculate train/val split for this dataset
-            train_seqs = int(num_seqs * self.train_split)
-            val_seqs = num_seqs - train_seqs
+            train_seqs = int(processed_seqs * self.train_split)
+            val_seqs = processed_seqs - train_seqs
 
             # * add absolute indices for train sequences
             for i in range(train_seqs):
@@ -142,7 +142,7 @@ class Loader:
         print(f"loaded cache: {len(self.data):,} total tokens in cache")
         print(f"active datasets: {len(self.dataset_info['datasets'])}")
         for ds in self.dataset_info['datasets']:
-            print(f"  - {ds['name']}: {ds['num_sequences']:,} sequences")
+            print(f"  - {ds['name']}: {ds['processed_sequences']:,}/{ds['total_sequences']:,} sequences")
         print(f"filtered view: {len(self.filtered_train_indices):,} train, {len(self.filtered_val_indices):,} val")
 
         # * reset position trackers

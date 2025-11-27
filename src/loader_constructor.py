@@ -39,9 +39,22 @@ class LoaderConstructorProcessor(ABC):
         pass
 
     @abstractmethod
-    def should_filter(self, row: dict) -> bool:
+    def should_filter(self) -> bool:
         """
-        Check if a row should be filtered out
+        Check if filtering is required for this dataset
+
+        Returns:
+            True if filtering should be applied, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def filter(self, row: dict) -> bool:
+        """
+        Filter function to apply to dataset rows
+
+        Args:
+            row: The dataset row
 
         Returns:
             True if row should be kept, False if it should be filtered out
@@ -117,12 +130,12 @@ class LoaderConstructor:
                 return processor
         return None
 
-    def _save_progress(self, dataset_metadata, total_sequences, total_tokens, max_token_value, complete=False):
+    def _save_progress(self, dataset_metadata, full_sequences, total_tokens, max_token_value, complete=False):
         """Save progress to index.json"""
         with open(self.index_json_file, 'w') as f:
             json.dump({
                 'datasets': dataset_metadata,
-                'total_sequences': total_sequences,
+                'full_sequences': full_sequences,
                 'total_tokens': total_tokens,
                 'vocab_size': max_token_value + 1,
                 'train_split': self.train_split,
@@ -162,25 +175,45 @@ class LoaderConstructor:
             max_token_value = progress['vocab_size'] - 1
             dataset_metadata = progress['datasets']
 
-            # * calculate total sequences from metadata
-            total_sequences = sum(ds['num_sequences'] for ds in dataset_metadata)
+            # * calculate full sequences from metadata
+            full_sequences = sum(ds['processed_sequences'] for ds in dataset_metadata)
+
+            # * find incomplete dataset (if any) - must complete first to maintain sequential order
+            incomplete_dataset_idx = None
+            for idx, ds in enumerate(dataset_metadata):
+                if ds['processed_sequences'] < ds['total_sequences']:
+                    incomplete_dataset_idx = idx
+                    print(f"found incomplete dataset: {ds['name']}")
+                    print(f"  processed: {ds['processed_sequences']:,}/{ds['total_sequences']:,}")
+                    print(f"  must complete this dataset first to maintain sequential ordering in data.bin")
+                    break
 
             # * determine which dataset to resume from
-            resume_dataset_idx = len(dataset_metadata)
-            if resume_dataset_idx > 0:
-                last_ds = dataset_metadata[-1]
-                resume_from = last_ds.get('processed_sequence_idx', 0)
-                print(f"last dataset: {last_ds['name']}, processed {resume_from} sequences")
+            if incomplete_dataset_idx is not None:
+                resume_dataset_idx = incomplete_dataset_idx
+                # * check if incomplete dataset is in required list
+                incomplete_name = dataset_metadata[incomplete_dataset_idx]['name']
+                if incomplete_name not in dataset_names:
+                    raise ValueError(
+                        f"Incomplete dataset '{incomplete_name}' found in cache but not in required list.\n"
+                        f"To maintain sequential ordering in data.bin, you must either:\n"
+                        f"  1. Include '{incomplete_name}' in your dataset_names list, or\n"
+                        f"  2. Delete the cache and start fresh.\n"
+                        f"Current progress: {dataset_metadata[incomplete_dataset_idx]['processed_sequences']:,}/"
+                        f"{dataset_metadata[incomplete_dataset_idx]['total_sequences']:,} sequences"
+                    )
+            else:
+                resume_dataset_idx = len(dataset_metadata)
 
             if resume_dataset_idx >= len(dataset_names):
                 print("all datasets already processed, marking as complete")
-                self._save_progress(dataset_metadata, total_sequences, total_tokens, max_token_value, complete=True)
+                self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value, complete=True)
                 return
         else:
             print("starting fresh...")
             total_tokens = 0
             max_token_value = 0
-            total_sequences = 0
+            full_sequences = 0
             dataset_metadata = []
             resume_dataset_idx = 0
 
@@ -198,7 +231,8 @@ class LoaderConstructor:
             index_buffer_size = 10000
 
             for dataset_idx, dataset_name in enumerate(dataset_names):
-                # * skip already completed datasets
+                # * check if we should skip this dataset (already completed)
+                # only skip if we're past the resume point
                 if dataset_idx < resume_dataset_idx:
                     print(f"skipping completed dataset: {dataset_name}")
                     continue
@@ -209,24 +243,46 @@ class LoaderConstructor:
                     print(f"ERROR: no processor for {dataset_name}, skipping")
                     continue
 
-                print(f"processing dataset: {dataset_name}")
+                print(f"loading dataset: {dataset_name}")
+
+                # * load dataset without streaming to get total length
                 dataset = load_dataset(dataset_name, split='train')
 
-                # * apply filter if processor defines one
-                try:
-                    dataset = dataset.filter(processor.should_filter)
-                except Exception as e:
-                    print(f"warning: filter failed for {dataset_name}: {e}")
+                # * apply filter if processor requires it
+                if processor.should_filter():
+                    print(f"  applying filter...")
+                    try:
+                        dataset = dataset.filter(processor.filter)
+                        dataset_total_sequences = len(dataset)
+                        print(f"  after filter: {dataset_total_sequences:,} rows")
+                    except Exception as e:
+                        print(f"  warning: filter failed for {dataset_name}: {e}")
+                        dataset_total_sequences = len(dataset)
+                else:
+                    dataset_total_sequences = len(dataset)
 
-                dataset_start_seq = total_sequences
+                print(f"dataset total sequences: {dataset_total_sequences:,}")
+                print(f"processing dataset: {dataset_name}")
+
+                # * determine start sequence index for this dataset
+                # if resuming, use the metadata from cache
+                # otherwise, use current full_sequences
+                if dataset_idx < len(dataset_metadata):
+                    # resuming this dataset - use existing metadata
+                    dataset_start_seq = dataset_metadata[dataset_idx]['start_sequence_idx']
+                else:
+                    # new dataset - use current full_sequences
+                    dataset_start_seq = full_sequences
+
                 processed_sequences = 0
 
                 # * if resuming current dataset, skip already processed sequences
                 skip_count = 0
-                if dataset_idx == resume_dataset_idx and progress and len(dataset_metadata) > 0:
-                    skip_count = dataset_metadata[-1].get('processed_sequence_idx', 0)
+                if dataset_idx == resume_dataset_idx and dataset_idx < len(dataset_metadata):
+                    skip_count = dataset_metadata[dataset_idx].get('processed_sequences', 0)
                     if skip_count > 0:
-                        print(f"skipping first {skip_count} sequences...")
+                        print(f"resuming from sequence {skip_count:,}...")
+                        print(f"skipping first {skip_count:,} sequences...")
 
                 for row in dataset:
                     # * skip already processed sequences
@@ -240,38 +296,39 @@ class LoaderConstructor:
                         if tokens is None:
                             continue
 
-                        # * record starting index of this sequence
+                        # * add tokens to chunk buffer
+                        chunk_tokens.extend(tokens.tolist())
+
+                        # * add index to index buffer (points to where this sequence starts)
                         index_buffer.append(total_tokens)
 
-                        # * flush index buffer if needed
-                        if len(index_buffer) >= index_buffer_size:
-                            index_array = np.array(index_buffer, dtype=np.uint64)
-                            index_array.tofile(index_f)
-                            index_buffer = []
-
-                        chunk_tokens.extend(tokens.tolist())
+                        # * update counters
                         total_tokens += len(tokens)
-                        total_sequences += 1
+                        full_sequences += 1
                         processed_sequences += 1
 
                         # * track max token value
                         if len(tokens) > 0:
                             max_token_value = max(max_token_value, int(tokens.max()))
 
-                        if processed_sequences % 1000 == 0:
-                            print(f"  processed {processed_sequences:,} sequences, {total_tokens:,} tokens...")
-
                         # * flush chunk to disk and save progress
                         if len(chunk_tokens) >= chunk_size:
+                            # * write data chunk
                             chunk_array = np.array(chunk_tokens, dtype=np.uint16)
                             chunk_array.tofile(data_f)
                             chunk_tokens = []
+
+                            # * write index buffer
+                            if index_buffer:
+                                index_array = np.array(index_buffer, dtype=np.uint64)
+                                index_array.tofile(index_f)
+                                index_buffer = []
 
                             # * update or add current dataset metadata
                             current_ds_meta = {
                                 'name': dataset_name,
                                 'start_sequence_idx': dataset_start_seq,
-                                'total_sequences': total_sequences - dataset_start_seq,
+                                'total_sequences': dataset_total_sequences,
                                 'processed_sequences': processed_sequences
                             }
 
@@ -280,20 +337,37 @@ class LoaderConstructor:
                             else:
                                 dataset_metadata[dataset_idx] = current_ds_meta
 
-                            # * save progress
-                            self._save_progress(dataset_metadata, total_sequences, total_tokens, max_token_value,
+                            # * save progress to disk
+                            self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value,
                                                 complete=False)
+
+                            print(
+                                f"  processed {processed_sequences:,}/{dataset_total_sequences:,} sequences, {total_tokens:,} tokens...")
+
 
                     except Exception as e:
                         print(f"error processing row {processed_sequences} from {dataset_name}: {e}")
                         continue
 
+                # * after finishing dataset, flush any remaining data and save final state
+                # * write remaining tokens for this dataset
+                if chunk_tokens:
+                    chunk_array = np.array(chunk_tokens, dtype=np.uint16)
+                    chunk_array.tofile(data_f)
+                    chunk_tokens = []
+
+                # * write remaining indices for this dataset
+                if index_buffer:
+                    index_array = np.array(index_buffer, dtype=np.uint64)
+                    index_array.tofile(index_f)
+                    index_buffer = []
+
                 # * save dataset metadata with final count
                 current_ds_meta = {
                     'name': dataset_name,
-                    'num_sequences': total_sequences - dataset_start_seq,
                     'start_sequence_idx': dataset_start_seq,
-                    'processed_sequence_idx': processed_sequences
+                    'total_sequences': dataset_total_sequences,
+                    'processed_sequences': processed_sequences
                 }
 
                 if dataset_idx == len(dataset_metadata):
@@ -301,19 +375,25 @@ class LoaderConstructor:
                 else:
                     dataset_metadata[dataset_idx] = current_ds_meta
 
-                print(f"completed {dataset_name}: {processed_sequences:,} sequences")
+                # * save progress after completing dataset
+                self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value, complete=False)
 
-            # * write remaining tokens
+                print(f"completed {dataset_name}: {processed_sequences:,}/{dataset_total_sequences:,} sequences")
+
+            # * final writes at end of all datasets (should be empty if datasets completed properly)
+            # * write any remaining tokens
             if chunk_tokens:
+                print("  writing final token chunk...")
                 chunk_array = np.array(chunk_tokens, dtype=np.uint16)
                 chunk_array.tofile(data_f)
 
-            # * write remaining indices
+            # * write any remaining indices
             if index_buffer:
+                print("  writing final index buffer...")
                 index_array = np.array(index_buffer, dtype=np.uint64)
                 index_array.tofile(index_f)
 
-        print(f"\ntotal sequences processed: {total_sequences:,}")
+        print(f"\nfull sequences processed: {full_sequences:,}")
         print(f"total tokens: {total_tokens:,}")
 
         # * calculate vocab size
@@ -321,6 +401,6 @@ class LoaderConstructor:
         print(f"vocabulary size: {vocab_size:,}")
 
         # * mark as complete
-        self._save_progress(dataset_metadata, total_sequences, total_tokens, max_token_value, complete=True)
+        self._save_progress(dataset_metadata, full_sequences, total_tokens, max_token_value, complete=True)
 
         print(f"cache construction completed and saved to {self.cache_dir}")
