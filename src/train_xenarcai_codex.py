@@ -38,9 +38,9 @@ wandb_run_name = 'nano-run'
 
 dataset_names = ['XenArcAI/CodeX-7M-Non-Thinking']
 cache_dir = '.local/cache'
-gradient_accumulation_steps = 56
-batch_size = 28
-block_size = 32768
+gradient_accumulation_steps = 24
+batch_size = 12
+block_size = 4096
 
 n_layer = 16
 n_head = 16
@@ -266,20 +266,52 @@ while True:
             best_val_loss = losses['val']
             if iter_num > 0:
                 if ddp:
+                    # * save fsdp model state
                     save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
                     with FSDP.state_dict_type(raw_model, StateDictType.FULL_STATE_DICT, save_policy):
                         model_state = raw_model.state_dict()
+
+                    # * only rank 0 saves the checkpoint
+                    if master_process:
+                        # * remove '_orig_mod.' prefix
+                        unwanted_prefix = '_orig_mod.'
+                        cleaned_state = {}
+                        for k, v in model_state.items():
+                            if k.startswith(unwanted_prefix):
+                                cleaned_state[k[len(unwanted_prefix):]] = v
+                            else:
+                                cleaned_state[k] = v
+
+                        checkpoint = {
+                            'model': cleaned_state,
+                            'optimizer': optimizer.state_dict(),
+                            'model_args': model_args,
+                            'iter_num': iter_num,
+                            'best_val_loss': best_val_loss,
+                        }
+                        print(f"Saving checkpoint at iteration {iter_num}")
+                        torch.save(checkpoint, os.path.join(out_dir, 'ckpt.pt'))
                 else:
                     model_state = raw_model.state_dict()
 
-                checkpoint = {
-                    'model': model_state,
-                    'optimizer': optimizer.state_dict(),
-                    'model_args': model_args,
-                    'iter_num': iter_num,
-                    'best_val_loss': best_val_loss,
-                }
-                torch.save(checkpoint, os.path.join(out_dir, 'ckpt.pt'))
+                    # * remove '_orig_mod.' prefix
+                    unwanted_prefix = '_orig_mod.'
+                    cleaned_state = {}
+                    for k, v in model_state.items():
+                        if k.startswith(unwanted_prefix):
+                            cleaned_state[k[len(unwanted_prefix):]] = v
+                        else:
+                            cleaned_state[k] = v
+
+                    checkpoint = {
+                        'model': cleaned_state,
+                        'optimizer': optimizer.state_dict(),
+                        'model_args': model_args,
+                        'iter_num': iter_num,
+                        'best_val_loss': best_val_loss,
+                    }
+                    print(f"saving checkpoint at iteration {iter_num}")
+                    torch.save(checkpoint, os.path.join(out_dir, 'ckpt.pt'))
 
     if iter_num == 0 and eval_only:
         break
