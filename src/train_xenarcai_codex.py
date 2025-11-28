@@ -239,7 +239,7 @@ if wandb_log and master_process:
 t0 = time.time()
 local_iter_num = 0
 raw_model = model.module if ddp else model
-running_mfu = -1.0
+running_flops = -1.0
 last_train_batch = None
 
 if master_process:
@@ -260,7 +260,9 @@ while True:
                 "train/loss": losses['train'],
                 "val/loss": losses['val'],
                 "lr": lr,
-                "mfu": running_mfu * 100,
+                "flops_per_second": running_flops,
+                "tflops_per_second": running_flops / 1e12 if running_flops > 0 else 0,
+                "pflops_per_second": running_flops / 1e15 if running_flops > 0 else 0,
             })
         if losses['val'] < best_val_loss or always_save_checkpoint:
             best_val_loss = losses['val']
@@ -364,9 +366,11 @@ while True:
     if iter_num % log_interval == 0 and master_process:
         lossf = loss.item() * local_gradient_accumulation_steps
         if local_iter_num >= 5:
-            mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
-            running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
-        print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%")
+            flops_per_second = raw_model.estimate_flops(batch_size * gradient_accumulation_steps, dt)
+            running_flops = flops_per_second if running_flops == -1.0 else 0.9 * running_flops + 0.1 * flops_per_second
+        tflops = running_flops / 1e12 if running_flops > 0 else 0
+        pflops = running_flops / 1e15 if running_flops > 0 else 0
+        print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, tflops/s {tflops:.2f}, pflops/s {pflops:.4f}")
 
     iter_num += 1
     local_iter_num += 1
