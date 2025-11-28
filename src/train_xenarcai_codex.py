@@ -38,9 +38,9 @@ wandb_run_name = 'nano-run'
 
 dataset_names = ['XenArcAI/CodeX-7M-Non-Thinking']
 cache_dir = '.local/cache'
-gradient_accumulation_steps = 28
+gradient_accumulation_steps = 56
 batch_size = 28
-block_size = 20480
+block_size = 32768
 
 n_layer = 16
 n_head = 16
@@ -48,7 +48,7 @@ n_embd = 512
 dropout = 0.1
 bias = False
 
-learning_rate = 3e-4
+learning_rate = 5e-4
 weight_decay = 1e-1
 beta1 = 0.9
 beta2 = 0.99
@@ -56,7 +56,7 @@ grad_clip = 1.0
 
 decay_lr = True
 warmup_iters = 100
-min_lr = 1e-5
+min_lr = 1e-4
 
 backend = 'nccl'
 fsdp_sharding_strategy = ShardingStrategy.SHARD_GRAD_OP
