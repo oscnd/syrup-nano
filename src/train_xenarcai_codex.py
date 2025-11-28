@@ -48,7 +48,7 @@ n_embd = 512
 dropout = 0.1
 bias = False
 
-learning_rate = 1e-3
+learning_rate = 3e-4
 weight_decay = 1e-1
 beta1 = 0.9
 beta2 = 0.99
@@ -56,9 +56,10 @@ grad_clip = 1.0
 
 decay_lr = True
 warmup_iters = 100
-min_lr = 1e-4
+min_lr = 1e-5
 
 backend = 'nccl'
+fsdp_sharding_strategy = ShardingStrategy.SHARD_GRAD_OP
 
 device = 'cuda'
 dtype = 'bfloat16' if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else 'float16'
@@ -89,7 +90,7 @@ torch.backends.cuda.matmul.fp32_precision = 'tf32'
 torch.backends.cudnn.conv.fp32_precision = 'tf32'
 device_type = 'cuda' if 'cuda' in device else 'cpu'
 torch_dtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[dtype]
-ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=device_type, dtype=torch_dtype)
+ctx = nullcontext() if (device_type == 'cpu' or ddp) else torch.amp.autocast(device_type=device_type, dtype=torch_dtype)
 
 
 def get_batch(split='train'):
@@ -163,10 +164,15 @@ if master_process:
 model_args['vocab_size'] = meta_vocab_size
 config = Config(**model_args)
 model = Module(config)
-
 model.to(device)
 
-scaler = torch.amp.GradScaler('cuda', enabled=(dtype == 'float16'))
+# * cast model to target dtype
+if dtype != 'float32':
+    model = model.to(torch_dtype)
+
+# * initialize a gradscaler
+use_grad_scaler = (dtype == 'float16' and not ddp)
+scaler = torch.amp.GradScaler('cuda', enabled=use_grad_scaler)
 
 optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
 
@@ -180,12 +186,6 @@ if ddp:
     if master_process:
         print("wrapping model with fsdp...")
 
-    mixed_precision = MixedPrecision(
-        param_dtype=torch_dtype,
-        reduce_dtype=torch_dtype,
-        buffer_dtype=torch_dtype,
-    )
-
     auto_wrap_policy = partial(
         transformer_auto_wrap_policy,
         transformer_layer_cls={Block},
@@ -193,9 +193,8 @@ if ddp:
 
     model = FSDP(
         model,
-        mixed_precision=mixed_precision,
         auto_wrap_policy=auto_wrap_policy,
-        sharding_strategy=ShardingStrategy.FULL_SHARD,
+        sharding_strategy=fsdp_sharding_strategy,
         device_id=torch.cuda.current_device(),
         limit_all_gathers=True,
         use_orig_params=True,
@@ -294,7 +293,7 @@ while True:
                     last_train_batch = (X, Y)
                     logits, loss = model(X, Y)
                     loss = loss / local_gradient_accumulation_steps
-                scaler.scale(loss).backward()
+                loss.backward()
             else:
                 with model.no_sync():
                     with ctx:
@@ -302,21 +301,29 @@ while True:
                         last_train_batch = (X, Y)
                         logits, loss = model(X, Y)
                         loss = loss / local_gradient_accumulation_steps
-                    scaler.scale(loss).backward()
+                    loss.backward()
         else:
             with ctx:
                 X, Y = get_batch('train')
                 last_train_batch = (X, Y)
                 logits, loss = model(X, Y)
                 loss = loss / local_gradient_accumulation_steps
-            scaler.scale(loss).backward()
+            if use_grad_scaler:
+                scaler.scale(loss).backward()
+            else:
+                loss.backward()
 
     if grad_clip != 0.0:
-        scaler.unscale_(optimizer)
+        if use_grad_scaler:
+            scaler.unscale_(optimizer)
         torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
 
-    scaler.step(optimizer)
-    scaler.update()
+    if use_grad_scaler:
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        optimizer.step()
+
     optimizer.zero_grad(set_to_none=True)
 
     t1 = time.time()
