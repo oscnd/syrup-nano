@@ -11,19 +11,23 @@ $ torchrun --standalone --nproc_per_node=4 train.py
 import os
 import time
 import math
-import pickle
 from contextlib import nullcontext
+from functools import partial
 import numpy as np
 import torch
 from torch.nn.parallel import DistributedDataParallel
 from torch.distributed import init_process_group, destroy_process_group
-from trainer_model import Config, Module
-from loader_process_xenarcai_codex import create_loader
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+from torch.distributed.fsdp import MixedPrecision, ShardingStrategy
+from torch.distributed.fsdp import FullStateDictConfig, StateDictType
+from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
+from trainer_model import Config, Module, Block
+from loader import Loader
 
 # * configuration
 out_dir = '.local/output'
-eval_interval = 1024
-log_interval = 1024
+eval_interval = 16
+log_interval = 16
 eval_only = False
 always_save_checkpoint = True
 init_from = 'scratch'
@@ -35,15 +39,17 @@ wandb_project = 'nano'
 wandb_run_name = 'nano-run'
 
 # * data
-gradient_accumulation_steps = 8
-batch_size = 6
-block_size = 6144
+dataset_names = ['XenArcAI/CodeX-7M-Non-Thinking']
+cache_dir = '.local/cache'
+gradient_accumulation_steps = 32  # Will be divided by world_size
+batch_size = 16  # Will be divided by world_size
+block_size = 20480
 
-# * baby gpt model
-n_layer = 6
-n_head = 6
-n_embd = 384
-dropout = 0.2
+# * model hyperparameters - SCALED UP FOR 20K CONTEXT
+n_layer = 24
+n_head = 16
+n_embd = 1024
+dropout = 0.1
 bias = False
 
 # * adamw optimizer
@@ -96,20 +102,22 @@ ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=
 
 
 # * data loader
-def get_batch(loader):
+def get_batch(split='train'):
     """get a batch from loader - one get() call per batch item"""
+    local_batch_size = batch_size // ddp_world_size if ddp else batch_size
+
     x_list = []
     y_list = []
 
-    for _ in range(batch_size):
-        tokens = loader.get()
+    for _ in range(local_batch_size):
+        tokens = loader.get(split=split)
 
         # * reset loader if exhausted
         if tokens is None:
-            loader.reset()
-            tokens = loader.get()
+            loader.seek(0, split=split)
+            tokens = loader.get(split=split)
             if tokens is None:
-                raise ValueError("loader is empty")
+                raise ValueError(f"loader {split} split is empty")
 
         # * pad or truncate to block_size + 1
         if len(tokens) < block_size + 1:
@@ -143,20 +151,20 @@ def get_batch(loader):
 # * initialize loaders
 if master_process:
     print("initializing loaders...")
-loader = create_loader()
+loader = Loader(dataset_names, cache_dir=cache_dir)
 
 # * init these up here
 iter_num = 0
 best_val_loss = 1e9
 
 # * get vocab size
-meta_vocab_size = loader.nano.get_num()
+meta_vocab_size = loader.dataset_info['vocab_size']
 
 if master_process:
     print(f"using vocab_size {meta_vocab_size}")
 
 # * calculate max_iters based on dataset size
-total_train_sequences = loader.total_items
+total_train_sequences = loader.num_sequences('train')
 sequences_per_iter = gradient_accumulation_steps * ddp_world_size * batch_size
 max_iters = total_train_sequences // sequences_per_iter
 lr_decay_iters = max_iters
@@ -165,6 +173,8 @@ if master_process:
     print(f"total train sequences: {total_train_sequences:,}")
     print(f"sequences per iteration: {sequences_per_iter:,}")
     print(f"calculated max_iters: {max_iters:,}")
+    print(f"local batch size per gpu: {batch_size // ddp_world_size if ddp else batch_size}")
+    print(f"gradient accumulation steps per gpu: {gradient_accumulation_steps}")
 
 # * model init
 model_args = dict(n_layer=n_layer, n_head=n_head, n_embd=n_embd, block_size=block_size,
@@ -179,7 +189,7 @@ model = Module(config)
 model.to(device)
 
 # * initialize a gradscaler
-scaler = torch.amp.GradScaler('cuda', enabled=(dtype == 'bfloat16'))
+scaler = torch.amp.GradScaler('cuda', enabled=(dtype == 'float16'))
 
 # * optimizer
 optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
@@ -191,9 +201,33 @@ if compilation:
     unoptimized_model = model
     model = torch.compile(model)
 
-# * wrap model into ddp container
+# * wrap model into fsdp container
 if ddp:
-    model = DistributedDataParallel(model, device_ids=[ddp_local_rank])
+    if master_process:
+        print("wrapping model with fsdp...")
+
+    # * fsdp configuration
+    mixed_precision = MixedPrecision(
+        param_dtype=torch_dtype,
+        reduce_dtype=torch_dtype,
+        buffer_dtype=torch_dtype,
+    )
+
+    # * auto-wrap policy
+    auto_wrap_policy = partial(
+        transformer_auto_wrap_policy,
+        transformer_layer_cls={Block},
+    )
+
+    model = FSDP(
+        model,
+        mixed_precision=mixed_precision,
+        auto_wrap_policy=auto_wrap_policy,
+        sharding_strategy=ShardingStrategy.FULL_SHARD,
+        device_id=torch.cuda.current_device(),
+        limit_all_gathers=True,
+        use_orig_params=True,
+    )
 
 
 # * estimate loss
@@ -204,7 +238,7 @@ def estimate_loss():
     for split in ['train', 'val']:
         losses = torch.zeros(eval_interval)
         for k in range(eval_interval):
-            X, Y = get_batch(split, loader)
+            X, Y = get_batch(split)
             with ctx:
                 logits, loss = model(X, Y)
             losses[k] = loss.item()
@@ -248,9 +282,9 @@ while True:
 
     # * evaluate and save checkpoints
     if iter_num % eval_interval == 0 and master_process:
-        # losses = estimate_loss()
-        losses = {'train': 0.0, 'val': 0.0}
+        losses = estimate_loss()
         print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+
         if wandb_log:
             wandb.log({
                 "iter": iter_num,
@@ -262,14 +296,21 @@ while True:
         if losses['val'] < best_val_loss or always_save_checkpoint:
             best_val_loss = losses['val']
             if iter_num > 0:
+                # use special state for fsdp
+                if ddp:
+                    save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
+                    with FSDP.state_dict_type(raw_model, StateDictType.FULL_STATE_DICT, save_policy):
+                        model_state = raw_model.state_dict()
+                else:
+                    model_state = raw_model.state_dict()
+
                 checkpoint = {
-                    'model': raw_model.state_dict(),
+                    'model': model_state,
                     'optimizer': optimizer.state_dict(),
                     'model_args': model_args,
                     'iter_num': iter_num,
                     'best_val_loss': best_val_loss,
                 }
-                print(f"saving checkpoint to {out_dir}")
                 torch.save(checkpoint, os.path.join(out_dir, 'ckpt.pt'))
 
     if iter_num == 0 and eval_only:
@@ -277,12 +318,28 @@ while True:
 
     # * forward backward update
     for micro_step in range(gradient_accumulation_steps):
+        # fsdp uses no_sync instead of require_backward_grad_sync
         if ddp:
-            model.require_backward_grad_sync = (micro_step == gradient_accumulation_steps - 1)
-        with ctx:
-            X, Y = get_batch(loader)
-            logits, loss = model(X, Y)
-            loss = loss / gradient_accumulation_steps
+            if micro_step == gradient_accumulation_steps - 1:
+                # last step: sync gradients
+                with ctx:
+                    X, Y = get_batch('train')
+                    logits, loss = model(X, Y)
+                    loss = loss / gradient_accumulation_steps
+                scaler.scale(loss).backward()
+            else:
+                # other steps: no sync
+                with model.no_sync():
+                    with ctx:
+                        X, Y = get_batch('train')
+                        logits, loss = model(X, Y)
+                        loss = loss / gradient_accumulation_steps
+                    scaler.scale(loss).backward()
+        else:
+            with ctx:
+                X, Y = get_batch('train')
+                logits, loss = model(X, Y)
+                loss = loss / gradient_accumulation_steps
             scaler.scale(loss).backward()
 
     # * clip gradients
@@ -302,7 +359,7 @@ while True:
     if iter_num % log_interval == 0 and master_process:
         lossf = loss.item() * gradient_accumulation_steps
         if local_iter_num >= 5:
-            mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
+            mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps * ddp_world_size, dt)
             running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
         print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%")
 
