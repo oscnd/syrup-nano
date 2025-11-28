@@ -38,7 +38,7 @@ wandb_run_name = 'nano-run'
 
 dataset_names = ['XenArcAI/CodeX-7M-Non-Thinking']
 cache_dir = '.local/cache'
-gradient_accumulation_steps = 42
+gradient_accumulation_steps = 28
 batch_size = 28
 block_size = 20480
 
@@ -144,7 +144,7 @@ if master_process:
     print(f"using vocab_size {meta_vocab_size}")
 
 total_train_sequences = loader.num_sequences('train')
-sequences_per_iter = gradient_accumulation_steps * ddp_world_size * batch_size
+sequences_per_iter = gradient_accumulation_steps * batch_size
 max_iters = total_train_sequences // sequences_per_iter
 lr_decay_iters = max_iters
 
@@ -325,7 +325,7 @@ while True:
     if iter_num % log_interval == 0 and master_process:
         lossf = loss.item() * local_gradient_accumulation_steps
         if local_iter_num >= 5:
-            mfu = raw_model.estimate_mfu(batch_size * local_gradient_accumulation_steps * ddp_world_size, dt)
+            mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
             running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
         print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%")
 
