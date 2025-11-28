@@ -41,11 +41,11 @@ wandb_run_name = 'nano-run'
 # * data
 dataset_names = ['XenArcAI/CodeX-7M-Non-Thinking']
 cache_dir = '.local/cache'
-gradient_accumulation_steps = 32  # Will be divided by world_size
-batch_size = 16  # Will be divided by world_size
+gradient_accumulation_steps = 40
+batch_size = 16
 block_size = 20480
 
-# * model hyperparameters - SCALED UP FOR 20K CONTEXT
+# * model hyperparameters
 n_layer = 24
 n_head = 16
 n_embd = 1024
@@ -84,7 +84,7 @@ if ddp:
     master_process = ddp_rank == 0
     seed_offset = ddp_rank
     assert gradient_accumulation_steps % ddp_world_size == 0
-    gradient_accumulation_steps //= ddp_world_size
+    assert batch_size % ddp_world_size == 0
 else:
     master_process = True
     seed_offset = 0
@@ -172,9 +172,9 @@ lr_decay_iters = max_iters
 if master_process:
     print(f"total train sequences: {total_train_sequences:,}")
     print(f"sequences per iteration: {sequences_per_iter:,}")
-    print(f"calculated max_iters: {max_iters:,}")
+    print(f"calculated iteration num: {max_iters:,}")
     print(f"local batch size per gpu: {batch_size // ddp_world_size if ddp else batch_size}")
-    print(f"gradient accumulation steps per gpu: {gradient_accumulation_steps}")
+    print(f"gradient accumulation steps per gpu: {gradient_accumulation_steps // ddp_world_size if ddp else gradient_accumulation_steps}")
 
 # * model init
 model_args = dict(n_layer=n_layer, n_head=n_head, n_embd=n_embd, block_size=block_size,
@@ -317,15 +317,16 @@ while True:
         break
 
     # * forward backward update
-    for micro_step in range(gradient_accumulation_steps):
+    local_gradient_accumulation_steps = gradient_accumulation_steps // ddp_world_size if ddp else gradient_accumulation_steps
+    for micro_step in range(local_gradient_accumulation_steps):
         # fsdp uses no_sync instead of require_backward_grad_sync
         if ddp:
-            if micro_step == gradient_accumulation_steps - 1:
+            if micro_step == local_gradient_accumulation_steps - 1:
                 # last step: sync gradients
                 with ctx:
                     X, Y = get_batch('train')
                     logits, loss = model(X, Y)
-                    loss = loss / gradient_accumulation_steps
+                    loss = loss / local_gradient_accumulation_steps
                 scaler.scale(loss).backward()
             else:
                 # other steps: no sync
@@ -333,13 +334,13 @@ while True:
                     with ctx:
                         X, Y = get_batch('train')
                         logits, loss = model(X, Y)
-                        loss = loss / gradient_accumulation_steps
+                        loss = loss / local_gradient_accumulation_steps
                     scaler.scale(loss).backward()
         else:
             with ctx:
                 X, Y = get_batch('train')
                 logits, loss = model(X, Y)
-                loss = loss / gradient_accumulation_steps
+                loss = loss / local_gradient_accumulation_steps
             scaler.scale(loss).backward()
 
     # * clip gradients
@@ -357,9 +358,9 @@ while True:
     dt = t1 - t0
     t0 = t1
     if iter_num % log_interval == 0 and master_process:
-        lossf = loss.item() * gradient_accumulation_steps
+        lossf = loss.item() * local_gradient_accumulation_steps
         if local_iter_num >= 5:
-            mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps * ddp_world_size, dt)
+            mfu = raw_model.estimate_mfu(batch_size * local_gradient_accumulation_steps * ddp_world_size, dt)
             running_mfu = mfu if running_mfu == -1.0 else 0.9 * running_mfu + 0.1 * mfu
         print(f"iter {iter_num}: loss {lossf:.4f}, time {dt * 1000:.2f}ms, mfu {running_mfu * 100:.2f}%")
 
